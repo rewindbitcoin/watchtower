@@ -34,19 +34,19 @@ DB_FOLDER=./db
 ```
 
 ### 3️⃣ Run the Watchtower API
-Start the server:
+Start the server to monitor all networks:
 ```bash
 npx ts-node src/index.ts
 ```
 
-You can specify a network type (defaults to `bitcoin` if not specified):
+You can disable specific networks:
 ```bash
-npx ts-node src/index.ts testnet
+npx ts-node src/index.ts --disable-bitcoin --disable-regtest
 ```
 
 Command line options:
 ```bash
-npx ts-node src/index.ts [network] --port=3000
+npx ts-node src/index.ts --port=3000 --disable-testnet
 ```
 
 Display help information:
@@ -56,8 +56,8 @@ npx ts-node src/index.ts --help
 
 If no port is specified, a random available port will be used and displayed in the console.
 
-Supported networks:
-- `bitcoin` (default)
+By default, the watchtower monitors all networks:
+- `bitcoin`
 - `testnet`
 - `regtest`
 
