@@ -32,10 +32,10 @@ export function registerRoutes(app: Express) {
         if (!vaultId || !Array.isArray(triggerTxIds)) {
           return res.status(400).json({ error: "Invalid vault data" });
         }
+        // Insert or ignore vault-pushToken pair (will be ignored if already exists)
         await db.run(
-          `INSERT INTO vaults (vaultId, pushToken) VALUES (?, ?)
-          ON CONFLICT(vaultId) DO UPDATE SET pushToken = ?;`,
-          vaultId, pushToken, pushToken
+          `INSERT OR IGNORE INTO vaults (vaultId, pushToken, status) VALUES (?, ?, 'pending')`,
+          [vaultId, pushToken]
         );
         
         // Process each transaction ID

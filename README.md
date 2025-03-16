@@ -87,15 +87,24 @@ The Watchtower API uses **SQLite** with the following structure:
 **Vault Table:**
 | Column | Type | Description |
 |----------|------|-------------|
-| `vaultId` | TEXT | Unique identifier for the vault |
+| `id` | INTEGER | Primary Key |
+| `vaultId` | TEXT | Identifier for the vault |
 | `pushToken` | TEXT | Expo push notification token |
+| `status` | TEXT | Status: 'pending', 'triggered', or 'notified' |
 
 **Vault Transactions Table:**
 | Column | Type | Description |
 |--------|------|-------------|
-| `id` | INTEGER (Primary Key) | Auto-increment ID |
+| `id` | INTEGER | Primary Key |
 | `vaultId` | TEXT | Associated vault ID |
 | `txid` | TEXT | Transaction ID to monitor |
+| `status` | TEXT | Status: 'pending' or 'triggered' |
+
+**Network State Table:**
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | INTEGER | Primary Key (always 1) |
+| `last_checked_height` | INTEGER | Last block height that was checked |
 
 ---
 
@@ -136,31 +145,27 @@ The Watchtower API uses **SQLite** with the following structure:
 
 ## 🔍 Blockchain Monitoring Strategy
 
-1. **Fetch the latest block height:**
+The Watchtower uses an efficient monitoring strategy to minimize API calls:
 
-   ```bash
-   GET /blocks/tip/height
-   ```
+1. **On startup:** Initialize with the last checked block height from the database
+   or current height minus IRREVERSIBLE_THRESHOLD if starting fresh.
 
-2. **Retrieve the block hash:**
+2. **For each monitoring cycle:**
+   - Get all new blocks since the last checked height
+   - Check if any pending transactions appear in these blocks
+   - Mark vaults as "triggered" when their transactions are found
+   - Send notifications to all devices for triggered vaults
+   - Mark notified vaults as "notified"
+   - Update the last checked height
 
-   ```bash
-   GET /block-height/:height
-   ```
+3. **Reorg handling:** Recheck the last 6 blocks (IRREVERSIBLE_THRESHOLD) on each
+   cycle to handle potential blockchain reorganizations
 
-3. **Extract all transactions in a block:**
+4. **In-memory caching:** Keep track of checked blocks in memory to avoid
+   redundant processing within a session
 
-   ```bash
-   GET /block/:hash/txids
-   ```
-
-4. **Track mempool transactions:**
-
-   ```bash
-   GET /mempool/txids
-   ```
-
-5. **Only re-check txid status if it disappears from the mempool.**
+This approach efficiently monitors transactions while handling multiple devices
+per vault and maintaining proper notification state.
 
 ---
 
