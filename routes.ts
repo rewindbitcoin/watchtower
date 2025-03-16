@@ -32,10 +32,16 @@ export function registerRoutes(app: Express) {
         if (!vaultId || !Array.isArray(triggerTxIds)) {
           return res.status(400).json({ error: "Invalid vault data" });
         }
-        // Insert or ignore vault-pushToken pair (will be ignored if already exists)
+        // Insert or ignore vault (will be ignored if already exists)
         await db.run(
-          `INSERT OR IGNORE INTO vaults (vaultId, pushToken, status) VALUES (?, ?, 'pending')`,
-          [vaultId, pushToken]
+          `INSERT OR IGNORE INTO vaults (vaultId, pending) VALUES (?, TRUE)`,
+          [vaultId]
+        );
+        
+        // Insert or ignore notification entry
+        await db.run(
+          `INSERT OR IGNORE INTO notifications (pushToken, vaultId, notified) VALUES (?, ?, FALSE)`,
+          [pushToken, vaultId]
         );
         
         // Process each transaction ID
@@ -47,9 +53,9 @@ export function registerRoutes(app: Express) {
           );
           
           if (!existing) {
-            // Insert new transaction to monitor with default 'pending' status
+            // Insert new transaction to monitor with default block_height of -1 (not mined)
             await db.run(
-              "INSERT INTO vault_txids (vaultId, txid, status) VALUES (?, ?, 'pending')",
+              "INSERT INTO vault_txids (vaultId, txid, block_height) VALUES (?, ?, -1)",
               [vaultId, txid]
             );
           }

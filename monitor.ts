@@ -67,33 +67,34 @@ async function checkTransactionInBlockOrMempool(txid: string, blockTxids: string
 async function sendNotifications(networkId: string) {
   const db = getDb(networkId);
   
-  // Get all vaults with triggered status
-  const triggeredVaults = await db.all(`
-    SELECT DISTINCT v.vaultId, v.pushToken, vt.txid
-    FROM vaults v
+  // Get all vaults that are not pending and have notifications that haven't been sent
+  const notificationsToSend = await db.all(`
+    SELECT n.pushToken, n.vaultId, vt.txid
+    FROM notifications n
+    JOIN vaults v ON n.vaultId = v.vaultId
     JOIN vault_txids vt ON v.vaultId = vt.vaultId
-    WHERE v.status = 'triggered'
+    WHERE v.pending = FALSE AND n.notified = FALSE
   `);
   
-  for (const vault of triggeredVaults) {
+  for (const notification of notificationsToSend) {
     try {
       // Send notification
       await sendPushNotification({
-        to: vault.pushToken,
+        to: notification.pushToken,
         title: "Vault Access Alert!",
-        body: `Your vault ${vault.vaultId} is being accessed!`,
-        data: { vaultId: vault.vaultId, txid: vault.txid }
+        body: `Your vault ${notification.vaultId} is being accessed!`,
+        data: { vaultId: notification.vaultId, txid: notification.txid }
       });
       
-      // Update vault status to notified
+      // Update notification status to sent
       await db.run(
-        "UPDATE vaults SET status = 'notified' WHERE vaultId = ? AND pushToken = ?",
-        [vault.vaultId, vault.pushToken]
+        "UPDATE notifications SET notified = TRUE WHERE vaultId = ? AND pushToken = ?",
+        [notification.vaultId, notification.pushToken]
       );
       
-      console.log(`Notification sent for vault ${vault.vaultId} to device ${vault.pushToken}`);
+      console.log(`Notification sent for vault ${notification.vaultId} to device ${notification.pushToken}`);
     } catch (error) {
-      console.error(`Error sending notification for vault ${vault.vaultId}:`, error);
+      console.error(`Error sending notification for vault ${notification.vaultId}:`, error);
     }
   }
 }
@@ -121,23 +122,38 @@ export async function monitorTransactions(networkId: string) {
     // If this is the first run or we're starting from scratch
     if (lastCheckedHeight === 0) {
       // Check all pending transactions directly
-      const pendingTxs = await db.all(
-        "SELECT vaultId, txid FROM vault_txids WHERE status = 'pending'"
-      );
+      const pendingTxs = await db.all(`
+        SELECT vt.vaultId, vt.txid 
+        FROM vault_txids vt
+        JOIN vaults v ON vt.vaultId = v.vaultId
+        WHERE v.pending = TRUE AND vt.block_height = -1
+      `);
       
       for (const tx of pendingTxs) {
         const status = await getTxStatus(tx.txid, networkId);
         
-        if (status && (status.confirmed || mempoolTxids.includes(tx.txid))) {
-          // Update transaction status
+        if (status && status.confirmed) {
+          // Transaction is confirmed in a block
           await db.run(
-            "UPDATE vault_txids SET status = 'triggered' WHERE txid = ? AND vaultId = ?",
+            "UPDATE vault_txids SET block_height = ? WHERE txid = ? AND vaultId = ?",
+            [status.block_height, tx.txid, tx.vaultId]
+          );
+          
+          // Update vault status to not pending
+          await db.run(
+            "UPDATE vaults SET pending = FALSE WHERE vaultId = ?",
+            [tx.vaultId]
+          );
+        } else if (mempoolTxids.includes(tx.txid)) {
+          // Transaction is in mempool
+          await db.run(
+            "UPDATE vault_txids SET block_height = -2 WHERE txid = ? AND vaultId = ?",
             [tx.txid, tx.vaultId]
           );
           
-          // Update vault status
+          // Update vault status to not pending
           await db.run(
-            "UPDATE vaults SET status = 'triggered' WHERE vaultId = ? AND status = 'pending'",
+            "UPDATE vaults SET pending = FALSE WHERE vaultId = ?",
             [tx.vaultId]
           );
         }
@@ -158,23 +174,32 @@ export async function monitorTransactions(networkId: string) {
         checkedBlocks[networkId].add(height);
         
         // Get all pending transactions
-        const pendingTxs = await db.all(
-          "SELECT vaultId, txid FROM vault_txids WHERE status = 'pending'"
-        );
+        const pendingTxs = await db.all(`
+          SELECT vt.vaultId, vt.txid 
+          FROM vault_txids vt
+          JOIN vaults v ON vt.vaultId = v.vaultId
+          WHERE v.pending = TRUE AND (vt.block_height = -1 OR vt.block_height = -2)
+        `);
         
         // Check each pending transaction
         for (const tx of pendingTxs) {
-          if (await checkTransactionInBlockOrMempool(tx.txid, blockTxids, mempoolTxids)) {
-            // Update transaction status
+          if (blockTxids.includes(tx.txid)) {
+            // Transaction found in this block
             await db.run(
-              "UPDATE vault_txids SET status = 'triggered' WHERE txid = ? AND vaultId = ?",
-              [tx.txid, tx.vaultId]
+              "UPDATE vault_txids SET block_height = ? WHERE txid = ? AND vaultId = ?",
+              [height, tx.txid, tx.vaultId]
             );
             
-            // Update vault status
+            // Update vault status to not pending
             await db.run(
-              "UPDATE vaults SET status = 'triggered' WHERE vaultId = ? AND status = 'pending'",
+              "UPDATE vaults SET pending = FALSE WHERE vaultId = ?",
               [tx.vaultId]
+            );
+          } else if (mempoolTxids.includes(tx.txid)) {
+            // Transaction is in mempool
+            await db.run(
+              "UPDATE vault_txids SET block_height = -2 WHERE txid = ? AND vaultId = ?",
+              [tx.txid, tx.vaultId]
             );
           }
         }
@@ -186,30 +211,67 @@ export async function monitorTransactions(networkId: string) {
     
     // Only recheck if we've already processed past this point
     if (lastCheckedHeight >= reorgStartHeight) {
-      for (let height = reorgStartHeight; height <= currentHeight; height++) {
-        // Get block hash and transactions
-        const blockHash = await getBlockHashByHeight(height, networkId);
+      // Get transactions that were supposedly mined in blocks we're rechecking
+      const txsToRecheck = await db.all(`
+        SELECT vt.vaultId, vt.txid, vt.block_height
+        FROM vault_txids vt
+        WHERE vt.block_height >= ? AND vt.block_height <= ?
+      `, [reorgStartHeight, currentHeight]);
+      
+      // Check if these transactions are still in their blocks
+      for (const tx of txsToRecheck) {
+        const blockHash = await getBlockHashByHeight(tx.block_height, networkId);
         const blockTxids = await getBlockTxids(blockHash, networkId);
         
-        // Get all pending transactions
-        const pendingTxs = await db.all(
-          "SELECT vaultId, txid FROM vault_txids WHERE status = 'pending'"
-        );
-        
-        // Check each pending transaction
-        for (const tx of pendingTxs) {
-          if (await checkTransactionInBlockOrMempool(tx.txid, blockTxids, mempoolTxids)) {
-            // Update transaction status
+        if (!blockTxids.includes(tx.txid)) {
+          // Transaction is no longer in the block it was in - possible reorg
+          console.log(`Possible reorg detected: ${tx.txid} no longer in block ${tx.block_height}`);
+          
+          // Check if it's in the mempool
+          if (mempoolTxids.includes(tx.txid)) {
             await db.run(
-              "UPDATE vault_txids SET status = 'triggered' WHERE txid = ? AND vaultId = ?",
+              "UPDATE vault_txids SET block_height = -2 WHERE txid = ? AND vaultId = ?",
               [tx.txid, tx.vaultId]
             );
+          } else {
+            // Check if it's in another block
+            let found = false;
+            for (let height = reorgStartHeight; height <= currentHeight; height++) {
+              if (height === tx.block_height) continue; // Skip the original block
+              
+              const otherBlockHash = await getBlockHashByHeight(height, networkId);
+              const otherBlockTxids = await getBlockTxids(otherBlockHash, networkId);
+              
+              if (otherBlockTxids.includes(tx.txid)) {
+                // Found in another block
+                await db.run(
+                  "UPDATE vault_txids SET block_height = ? WHERE txid = ? AND vaultId = ?",
+                  [height, tx.txid, tx.vaultId]
+                );
+                found = true;
+                break;
+              }
+            }
             
-            // Update vault status
-            await db.run(
-              "UPDATE vaults SET status = 'triggered' WHERE vaultId = ? AND status = 'pending'",
-              [tx.vaultId]
-            );
+            if (!found) {
+              // Not found in any block or mempool - reset to pending
+              await db.run(
+                "UPDATE vault_txids SET block_height = -1 WHERE txid = ? AND vaultId = ?",
+                [tx.txid, tx.vaultId]
+              );
+              
+              // Reset vault to pending
+              await db.run(
+                "UPDATE vaults SET pending = TRUE WHERE vaultId = ?",
+                [tx.vaultId]
+              );
+              
+              // Reset notifications to not sent
+              await db.run(
+                "UPDATE notifications SET notified = FALSE WHERE vaultId = ?",
+                [tx.vaultId]
+              );
+            }
           }
         }
       }

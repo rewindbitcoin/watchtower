@@ -13,18 +13,23 @@ export async function initDb(dbPath: string, networkId: string) {
   // Create tables if they do not exist
   await db.exec(`
     CREATE TABLE IF NOT EXISTS vaults (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      vaultId TEXT NOT NULL,
+      vaultId TEXT PRIMARY KEY,
+      pending BOOLEAN DEFAULT TRUE
+    );
+
+    CREATE TABLE IF NOT EXISTS notifications (
       pushToken TEXT NOT NULL,
-      status TEXT DEFAULT 'pending',
-      UNIQUE(vaultId, pushToken)
+      vaultId TEXT NOT NULL,
+      notified BOOLEAN DEFAULT FALSE,
+      PRIMARY KEY (pushToken, vaultId),
+      FOREIGN KEY(vaultId) REFERENCES vaults(vaultId)
     );
 
     CREATE TABLE IF NOT EXISTS vault_txids (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       vaultId TEXT NOT NULL,
       txid TEXT NOT NULL,
-      status TEXT DEFAULT 'pending',
+      block_height INTEGER DEFAULT -1,
       FOREIGN KEY(vaultId) REFERENCES vaults(vaultId)
     );
     

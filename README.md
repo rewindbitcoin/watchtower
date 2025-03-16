@@ -87,10 +87,15 @@ The Watchtower API uses **SQLite** with the following structure:
 **Vault Table:**
 | Column | Type | Description |
 |----------|------|-------------|
-| `id` | INTEGER | Primary Key |
-| `vaultId` | TEXT | Identifier for the vault |
-| `pushToken` | TEXT | Expo push notification token |
-| `status` | TEXT | Status: 'pending', 'triggered', or 'notified' |
+| `vaultId` | TEXT | Primary Key - Identifier for the vault |
+| `pending` | BOOLEAN | Whether the vault is still pending (TRUE) or has been triggered (FALSE) |
+
+**Notifications Table:**
+| Column | Type | Description |
+|----------|------|-------------|
+| `pushToken` | TEXT | Device push notification token |
+| `vaultId` | TEXT | Associated vault ID |
+| `notified` | BOOLEAN | Whether a notification has been sent (TRUE) or not (FALSE) |
 
 **Vault Transactions Table:**
 | Column | Type | Description |
@@ -98,7 +103,7 @@ The Watchtower API uses **SQLite** with the following structure:
 | `id` | INTEGER | Primary Key |
 | `vaultId` | TEXT | Associated vault ID |
 | `txid` | TEXT | Transaction ID to monitor |
-| `status` | TEXT | Status: 'pending' or 'triggered' |
+| `block_height` | INTEGER | Block height where transaction was mined (-1 = not seen, -2 = in mempool) |
 
 **Network State Table:**
 | Column | Type | Description |
@@ -153,9 +158,9 @@ The Watchtower uses an efficient monitoring strategy to minimize API calls:
 2. **For each monitoring cycle:**
    - Get all new blocks since the last checked height
    - Check if any pending transactions appear in these blocks
-   - Mark vaults as "triggered" when their transactions are found
-   - Send notifications to all devices for triggered vaults
-   - Mark notified vaults as "notified"
+   - Set vault's pending status to FALSE when transactions are found
+   - Send notifications to all devices for non-pending vaults
+   - Mark notifications as sent
    - Update the last checked height
 
 3. **Reorg handling:** Recheck the last 6 blocks (IRREVERSIBLE_THRESHOLD) on each
