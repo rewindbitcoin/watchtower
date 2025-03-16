@@ -47,14 +47,15 @@ if (!runBitcoin && !runTestnet && !runRegtest) {
 }
 
 // Validate DB_FOLDER environment variable
-if (!process.env.DB_FOLDER) {
+const dbFolder = process.env.DB_FOLDER;
+if (!dbFolder) {
   console.error("Error: DB_FOLDER environment variable is not set.");
   console.error("Please create a .env file with DB_FOLDER=./db or set the environment variable.");
   process.exit(1);
 }
 
 // Check if DB_FOLDER is empty or just whitespace
-if (process.env.DB_FOLDER.trim() === '') {
+if (dbFolder.trim() === '') {
   console.error("Error: DB_FOLDER environment variable is empty.");
   console.error("Please set a valid directory path for DB_FOLDER.");
   process.exit(1);
@@ -77,7 +78,7 @@ const server = app.listen(port, async () => {
   
   if (runBitcoin) {
     networks.push("bitcoin");
-    const dbPathBitcoin = path.join(process.cwd(), "..", process.env.DB_FOLDER, "watchtower.bitcoin.sqlite");
+    const dbPathBitcoin = path.join(process.cwd(), "..", dbFolder, "watchtower.bitcoin.sqlite");
     await initDb(dbPathBitcoin).catch(err => {
       console.error("Failed to initialize Bitcoin DB:", err);
       process.exit(1);
@@ -87,7 +88,7 @@ const server = app.listen(port, async () => {
   
   if (runTestnet) {
     networks.push("testnet");
-    const dbPathTestnet = path.join(process.cwd(), "..", process.env.DB_FOLDER, "watchtower.testnet.sqlite");
+    const dbPathTestnet = path.join(process.cwd(), "..", dbFolder, "watchtower.testnet.sqlite");
     await initDb(dbPathTestnet).catch(err => {
       console.error("Failed to initialize Testnet DB:", err);
       process.exit(1);
@@ -97,7 +98,7 @@ const server = app.listen(port, async () => {
   
   if (runRegtest) {
     networks.push("regtest");
-    const dbPathRegtest = path.join(process.cwd(), "..", process.env.DB_FOLDER, "watchtower.regtest.sqlite");
+    const dbPathRegtest = path.join(process.cwd(), "..", dbFolder, "watchtower.regtest.sqlite");
     await initDb(dbPathRegtest).catch(err => {
       console.error("Failed to initialize Regtest DB:", err);
       process.exit(1);
