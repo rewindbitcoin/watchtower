@@ -62,8 +62,8 @@ export async function checkTransaction(txid: string, vaultId: string, network: s
         // Record current height minus safety margin as the confirmed_not_exist_below_height
         const safeHeight = Math.max(0, currentHeight - REORG_SAFETY_MARGIN);
         await db.run(
-          "UPDATE vault_txids SET confirmed_not_exist_below_height = ?, last_checked_height = ? WHERE txid = ? AND vaultId = ?",
-          [safeHeight, currentHeight, txid, vaultId]
+          "UPDATE vault_txids SET confirmed_not_exist_below_height = ? WHERE txid = ? AND vaultId = ?",
+          [safeHeight, txid, vaultId]
         );
         return false;
       }
@@ -99,18 +99,12 @@ export async function checkTransaction(txid: string, vaultId: string, network: s
         if (blockTxids.includes(txid)) {
           // Transaction found in this block
           await db.run(
-            "UPDATE vault_txids SET status = 'confirmed', last_checked_height = ? WHERE txid = ? AND vaultId = ?",
-            [height, txid, vaultId]
+            "UPDATE vault_txids SET status = 'confirmed' WHERE txid = ? AND vaultId = ?",
+            [txid, vaultId]
           );
           return true;
         }
       }
-      
-      // Update last checked height
-      await db.run(
-        "UPDATE vault_txids SET last_checked_height = ? WHERE txid = ? AND vaultId = ?",
-        [currentHeight, txid, vaultId]
-      );
       
       return false;
     }
