@@ -6,7 +6,6 @@
     "build": "tsc"
   },
   "dependencies": {
-    "@rewindbitcoin/env": "github:rewindbitcoin/env#v33",
     "express": "^4.21.2",
     "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7"
