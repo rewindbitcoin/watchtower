@@ -26,10 +26,31 @@ export function registerRoutes(app: Express) {
           ON CONFLICT(vaultId) DO UPDATE SET pushToken = ?;`,
           vaultId, pushToken, pushToken
         );
-        // Remove previous txids and re-insert to ensure idempotence
-        await db.run(`DELETE FROM vault_txids WHERE vaultId = ?`, vaultId);
+        
+        // Process each transaction ID
         for (const txid of triggerTxIds) {
-          await db.run(`INSERT INTO vault_txids (vaultId, txid) VALUES (?, ?)`, vaultId, txid);
+          // Check if this txid is already being monitored for this vault
+          const existing = await db.get(
+            "SELECT id FROM vault_txids WHERE vaultId = ? AND txid = ?",
+            [vaultId, txid]
+          );
+          
+          if (!existing) {
+            // Insert new transaction to monitor with default 'pending' status
+            await db.run(
+              "INSERT INTO vault_txids (vaultId, txid, status) VALUES (?, ?, 'pending')",
+              [vaultId, txid]
+            );
+          }
+        }
+        
+        // Remove any txids that are no longer in the list
+        if (triggerTxIds.length > 0) {
+          const placeholders = triggerTxIds.map(() => '?').join(',');
+          await db.run(
+            `DELETE FROM vault_txids WHERE vaultId = ? AND txid NOT IN (${placeholders})`,
+            [vaultId, ...triggerTxIds]
+          );
         }
       }
       return res.sendStatus(200);

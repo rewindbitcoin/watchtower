@@ -3,6 +3,7 @@ import { AddressInfo } from "net";
 import path from "path";
 import { initDb } from "./db";
 import { registerRoutes } from "./routes";
+import { startMonitoring } from "./monitor";
 import fs from "fs";
 
 // Check for help flag
@@ -95,6 +96,8 @@ const server = app.listen(port, async () => {
       process.exit(1);
     });
     console.log("Bitcoin mainnet monitoring enabled");
+    // Start monitoring for bitcoin
+    startMonitoring("bitcoin", 60000);
   }
 
   if (runTestnet) {
@@ -105,6 +108,8 @@ const server = app.listen(port, async () => {
       process.exit(1);
     });
     console.log("Bitcoin testnet monitoring enabled");
+    // Start monitoring for testnet
+    startMonitoring("testnet", 60000);
   }
 
   if (runRegtest) {
@@ -115,6 +120,8 @@ const server = app.listen(port, async () => {
       process.exit(1);
     });
     console.log("Bitcoin regtest monitoring enabled");
+    // Start monitoring for regtest
+    startMonitoring("regtest", 30000); // Faster polling for regtest
   }
 
   console.log(`Monitoring networks: ${networks.join(", ")}`);

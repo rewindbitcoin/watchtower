@@ -1,27 +1,49 @@
-// Example functions to interact with the blockchain endpoints using fetch()
+// Functions to interact with the blockchain endpoints using fetch()
 
-export async function getLatestBlockHeight(): Promise<string> {
-  const response = await fetch('https://blockstream.info/api/blocks/tip/height');
+// Base URLs for different networks
+const API_BASE_URLS = {
+  bitcoin: 'https://blockstream.info/api',
+  testnet: 'https://blockstream.info/testnet/api',
+  regtest: 'http://localhost:3002/api' // Assuming local regtest explorer
+};
+
+export async function getLatestBlockHeight(network: string = 'bitcoin'): Promise<string> {
+  const baseUrl = API_BASE_URLS[network as keyof typeof API_BASE_URLS];
+  const response = await fetch(`${baseUrl}/blocks/tip/height`);
   if (!response.ok) throw new Error(`Failed to fetch latest block height: ${response.statusText}`);
   return response.text();
 }
 
-export async function getBlockHashByHeight(height: number): Promise<string> {
-  const response = await fetch(`https://blockstream.info/api/block-height/${height}`);
+export async function getBlockHashByHeight(height: number, network: string = 'bitcoin'): Promise<string> {
+  const baseUrl = API_BASE_URLS[network as keyof typeof API_BASE_URLS];
+  const response = await fetch(`${baseUrl}/block-height/${height}`);
   if (!response.ok) throw new Error(`Failed to fetch block hash: ${response.statusText}`);
   return response.text();
 }
 
-export async function getBlockTxids(blockHash: string): Promise<string[]> {
-  const response = await fetch(`https://blockstream.info/api/block/${blockHash}/txids`);
+export async function getBlockTxids(blockHash: string, network: string = 'bitcoin'): Promise<string[]> {
+  const baseUrl = API_BASE_URLS[network as keyof typeof API_BASE_URLS];
+  const response = await fetch(`${baseUrl}/block/${blockHash}/txids`);
   if (!response.ok) throw new Error(`Failed to fetch txids for block: ${response.statusText}`);
   return response.json();
 }
 
-export async function getMempoolTxids(): Promise<string[]> {
-  const response = await fetch('https://blockstream.info/api/mempool/txids');
+export async function getMempoolTxids(network: string = 'bitcoin'): Promise<string[]> {
+  const baseUrl = API_BASE_URLS[network as keyof typeof API_BASE_URLS];
+  const response = await fetch(`${baseUrl}/mempool/txids`);
   if (!response.ok) throw new Error(`Failed to fetch mempool txids: ${response.statusText}`);
   return response.json();
 }
 
-// Additional functions to check tx status can be added following your specifications.
+// Check transaction status
+export async function getTxStatus(txid: string, network: string = 'bitcoin'): Promise<any> {
+  const baseUrl = API_BASE_URLS[network as keyof typeof API_BASE_URLS];
+  const response = await fetch(`${baseUrl}/tx/${txid}/status`);
+  if (!response.ok && response.status !== 404) {
+    throw new Error(`Failed to get tx status for ${txid}: ${response.statusText}`);
+  }
+  if (response.status === 404) {
+    return null; // Transaction not found
+  }
+  return response.json();
+}

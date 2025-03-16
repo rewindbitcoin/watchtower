@@ -20,7 +20,18 @@ export async function initDb(dbPath: string) {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       vaultId TEXT NOT NULL,
       txid TEXT NOT NULL,
+      last_checked_height INTEGER,
+      confirmed_not_exist_below_height INTEGER,
+      status TEXT DEFAULT 'pending',
       FOREIGN KEY(vaultId) REFERENCES vaults(vaultId)
+    );
+    
+    CREATE TABLE IF NOT EXISTS monitored_blocks (
+      height INTEGER,
+      hash TEXT NOT NULL,
+      checked BOOLEAN DEFAULT FALSE,
+      network TEXT NOT NULL,
+      PRIMARY KEY (height, network)
     );
   `);
 }
