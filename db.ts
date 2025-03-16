@@ -26,9 +26,8 @@ export async function initDb(dbPath: string, networkId: string) {
     );
 
     CREATE TABLE IF NOT EXISTS vault_txids (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      txid TEXT PRIMARY KEY,
       vaultId TEXT NOT NULL,
-      txid TEXT NOT NULL,
       block_height INTEGER DEFAULT -1,
       FOREIGN KEY(vaultId) REFERENCES vaults(vaultId)
     );

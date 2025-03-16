@@ -135,8 +135,8 @@ export async function monitorTransactions(networkId: string) {
         if (status && status.confirmed) {
           // Transaction is confirmed in a block
           await db.run(
-            "UPDATE vault_txids SET block_height = ? WHERE txid = ? AND vaultId = ?",
-            [status.block_height, tx.txid, tx.vaultId]
+            "UPDATE vault_txids SET block_height = ? WHERE txid = ?",
+            [status.block_height, tx.txid]
           );
           
           // Update vault status to not pending
@@ -147,8 +147,8 @@ export async function monitorTransactions(networkId: string) {
         } else if (mempoolTxids.includes(tx.txid)) {
           // Transaction is in mempool
           await db.run(
-            "UPDATE vault_txids SET block_height = -2 WHERE txid = ? AND vaultId = ?",
-            [tx.txid, tx.vaultId]
+            "UPDATE vault_txids SET block_height = -2 WHERE txid = ?",
+            [tx.txid]
           );
           
           // Update vault status to not pending
@@ -186,8 +186,8 @@ export async function monitorTransactions(networkId: string) {
           if (blockTxids.includes(tx.txid)) {
             // Transaction found in this block
             await db.run(
-              "UPDATE vault_txids SET block_height = ? WHERE txid = ? AND vaultId = ?",
-              [height, tx.txid, tx.vaultId]
+              "UPDATE vault_txids SET block_height = ? WHERE txid = ?",
+              [height, tx.txid]
             );
             
             // Update vault status to not pending
@@ -198,8 +198,8 @@ export async function monitorTransactions(networkId: string) {
           } else if (mempoolTxids.includes(tx.txid)) {
             // Transaction is in mempool
             await db.run(
-              "UPDATE vault_txids SET block_height = -2 WHERE txid = ? AND vaultId = ?",
-              [tx.txid, tx.vaultId]
+              "UPDATE vault_txids SET block_height = -2 WHERE txid = ?",
+              [tx.txid]
             );
           }
         }
@@ -245,8 +245,8 @@ export async function monitorTransactions(networkId: string) {
               if (otherBlockTxids.includes(tx.txid)) {
                 // Found in another block
                 await db.run(
-                  "UPDATE vault_txids SET block_height = ? WHERE txid = ? AND vaultId = ?",
-                  [height, tx.txid, tx.vaultId]
+                  "UPDATE vault_txids SET block_height = ? WHERE txid = ?",
+                  [height, tx.txid]
                 );
                 found = true;
                 break;
@@ -256,8 +256,8 @@ export async function monitorTransactions(networkId: string) {
             if (!found) {
               // Not found in any block or mempool - reset to pending
               await db.run(
-                "UPDATE vault_txids SET block_height = -1 WHERE txid = ? AND vaultId = ?",
-                [tx.txid, tx.vaultId]
+                "UPDATE vault_txids SET block_height = -1 WHERE txid = ?",
+                [tx.txid]
               );
               
               // Reset vault to pending

@@ -46,16 +46,22 @@ export function registerRoutes(app: Express) {
         
         // Process each transaction ID
         for (const txid of triggerTxIds) {
-          // Check if this txid is already being monitored for this vault
+          // Check if this txid is already being monitored
           const existing = await db.get(
-            "SELECT id FROM vault_txids WHERE vaultId = ? AND txid = ?",
-            [vaultId, txid]
+            "SELECT txid FROM vault_txids WHERE txid = ?",
+            [txid]
           );
           
           if (!existing) {
             // Insert new transaction to monitor with default block_height of -1 (not mined)
             await db.run(
-              "INSERT INTO vault_txids (vaultId, txid, block_height) VALUES (?, ?, -1)",
+              "INSERT INTO vault_txids (txid, vaultId, block_height) VALUES (?, ?, -1)",
+              [txid, vaultId]
+            );
+          } else if (existing.vaultId !== vaultId) {
+            // If txid exists but is associated with a different vault, update it
+            await db.run(
+              "UPDATE vault_txids SET vaultId = ? WHERE txid = ?",
               [vaultId, txid]
             );
           }
