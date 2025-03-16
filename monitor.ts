@@ -20,28 +20,32 @@ const checkedBlocks: Record<string, Set<number>> = {
 
 /**
  * Initialize the monitoring system
+ * @returns An object with lastCheckedHeight and isFirstRun flag
  */
-export async function initMonitoring(networkId: string) {
+export async function initMonitoring(networkId: string): Promise<{ lastCheckedHeight: number, isFirstRun: boolean }> {
   const db = getDb(networkId);
   
   // Get the last checked height from the database
   const state = await db.get("SELECT last_checked_height FROM network_state WHERE id = 1");
   
-  if (!state || !state.last_checked_height) {
-    // If no last checked height, initialize with current height - IRREVERSIBLE_THRESHOLD
+  // True first run - no state record exists or last_checked_height is null
+  if (!state || state.last_checked_height === null) {
+    // Get current height to initialize
     const currentHeight = parseInt(await getLatestBlockHeight(networkId), 10);
     const startHeight = Math.max(0, currentHeight - IRREVERSIBLE_THRESHOLD);
     
+    // Create state record with initial height
     await db.run(
       "INSERT OR REPLACE INTO network_state (id, last_checked_height) VALUES (1, ?)",
       [startHeight]
     );
     
-    console.log(`Initialized ${networkId} monitoring from block height ${startHeight}`);
-    return startHeight;
+    console.log(`First run: Initialized ${networkId} monitoring from block height ${startHeight}`);
+    return { lastCheckedHeight: startHeight, isFirstRun: true };
   }
   
-  return state.last_checked_height;
+  console.log(`Resuming ${networkId} monitoring from block height ${state.last_checked_height}`);
+  return { lastCheckedHeight: state.last_checked_height, isFirstRun: false };
 }
 
 /**
@@ -106,21 +110,16 @@ export async function monitorTransactions(networkId: string) {
   const db = getDb(networkId);
   
   try {
-    // Get the last checked height
-    const state = await db.get("SELECT last_checked_height FROM network_state WHERE id = 1");
-    if (!state) {
-      console.error(`No state found for ${networkId}. Please initialize monitoring first.`);
-      return;
-    }
-    
-    const lastCheckedHeight = state.last_checked_height;
+    // Initialize monitoring and get state
+    const { lastCheckedHeight, isFirstRun } = await initMonitoring(networkId);
     const currentHeight = parseInt(await getLatestBlockHeight(networkId), 10);
     
     // Get mempool transactions
     const mempoolTxids = await getMempoolTxids(networkId);
     
-    // If this is the first run or we're starting from scratch
-    if (lastCheckedHeight === 0) {
+    // If this is the first run - use direct transaction status checks
+    if (isFirstRun) {
+      console.log(`First run for ${networkId}: Checking all pending transactions directly`);
       // Check all pending transactions directly
       const pendingTxs = await db.all(`
         SELECT vt.vaultId, vt.txid 
@@ -298,14 +297,9 @@ export async function monitorTransactions(networkId: string) {
 export function startMonitoring(networkId: string, intervalMs = 60000) {
   console.log(`Starting transaction monitoring for ${networkId} network`);
   
-  // Initialize monitoring
-  initMonitoring(networkId).then(() => {
-    // Run immediately on start
-    monitorTransactions(networkId);
-    
-    // Then run periodically
-    return setInterval(() => monitorTransactions(networkId), intervalMs);
-  }).catch(error => {
-    console.error(`Failed to initialize monitoring for ${networkId}:`, error);
-  });
+  // Run immediately on start - initialization happens inside monitorTransactions
+  monitorTransactions(networkId);
+  
+  // Then run periodically
+  return setInterval(() => monitorTransactions(networkId), intervalMs);
 }

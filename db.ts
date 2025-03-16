@@ -33,8 +33,8 @@ export async function initDb(dbPath: string, networkId: string) {
     );
     
     CREATE TABLE IF NOT EXISTS network_state (
-      id INTEGER PRIMARY KEY CHECK (id = 1),
-      last_checked_height INTEGER
+      id INTEGER PRIMARY KEY DEFAULT 1,
+      last_checked_height INTEGER NULL
     );
   `);
 
