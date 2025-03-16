@@ -2,9 +2,9 @@
 
 ## 📌 Overview
 
-The **Watchtower API** is a monitoring service for the **RewindBitcoin Wallet** 
-that tracks Bitcoin transactions associated with vaults. When a transaction 
-related to a monitored vault is detected, the service sends **push notifications** 
+The **Watchtower API** is a monitoring service for the **RewindBitcoin Wallet**
+that tracks Bitcoin transactions associated with vaults. When a transaction
+related to a monitored vault is detected, the service sends **push notifications**
 to the user.
 
 ## 🚀 Features
@@ -69,7 +69,8 @@ Display help information:
 npx ts-node src/index.ts --help
 ```
 
-If no port is specified, a random available port will be used and displayed in the console.
+If no port is specified, a random available port will be used and displayed in
+the console.
 
 By default, the watchtower monitors all networks:
 
@@ -162,7 +163,7 @@ The Watchtower API uses **SQLite** with the following structure:
 
 ## 📩 Push Notifications
 
-The service uses **Expo Push Notifications** to alert users when a monitored 
+The service uses **Expo Push Notifications** to alert users when a monitored
 vault is accessed.
 
 **Example Payload:**
@@ -198,6 +199,6 @@ npm test
 
 ## 🎯 Summary
 
-The **Watchtower API** efficiently tracks Bitcoin transactions related to vaults 
-and notifies users when their funds are accessed. It is designed to minimize 
+The **Watchtower API** efficiently tracks Bitcoin transactions related to vaults
+and notifies users when their funds are accessed. It is designed to minimize
 redundant API calls and maximize efficiency in blockchain polling.
