@@ -7,13 +7,23 @@ export function registerRoutes(app: Express) {
    * POST /register
    * Registers vaults and associates them with a push token.
    */
-  app.post('/register', async (req: Request, res: Response) => {
+  app.post('/register/:network', async (req: Request, res: Response) => {
     try {
+      const network = req.params.network;
+      
+      // Validate network parameter
+      if (!['bitcoin', 'testnet', 'regtest'].includes(network)) {
+        return res.status(400).json({ 
+          error: "Invalid network. Must be 'bitcoin', 'testnet', or 'regtest'" 
+        });
+      }
+      
       const { pushToken, vaults } = req.body;
       if (!pushToken || !Array.isArray(vaults)) {
         return res.status(400).json({ error: "Invalid input data" });
       }
-      const db = getDb();
+      
+      const db = getDb(network);
 
       // Insert or update each vault and its transaction ids.
       for (const vault of vaults) {

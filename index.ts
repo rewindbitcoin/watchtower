@@ -91,7 +91,7 @@ const server = app.listen(port, async () => {
   if (runBitcoin) {
     networks.push("bitcoin");
     const dbPathBitcoin = path.join(dbFolder, "watchtower.bitcoin.sqlite");
-    await initDb(dbPathBitcoin).catch((err) => {
+    await initDb(dbPathBitcoin, "bitcoin").catch((err) => {
       console.error("Failed to initialize Bitcoin DB:", err);
       process.exit(1);
     });
@@ -103,7 +103,7 @@ const server = app.listen(port, async () => {
   if (runTestnet) {
     networks.push("testnet");
     const dbPathTestnet = path.join(dbFolder, "watchtower.testnet.sqlite");
-    await initDb(dbPathTestnet).catch((err) => {
+    await initDb(dbPathTestnet, "testnet").catch((err) => {
       console.error("Failed to initialize Testnet DB:", err);
       process.exit(1);
     });
@@ -115,7 +115,7 @@ const server = app.listen(port, async () => {
   if (runRegtest) {
     networks.push("regtest");
     const dbPathRegtest = path.join(dbFolder, "watchtower.regtest.sqlite");
-    await initDb(dbPathRegtest).catch((err) => {
+    await initDb(dbPathRegtest, "regtest").catch((err) => {
       console.error("Failed to initialize Regtest DB:", err);
       process.exit(1);
     });

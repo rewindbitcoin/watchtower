@@ -1,10 +1,11 @@
 import sqlite3 from 'sqlite3';
 import { open, Database } from 'sqlite';
 
-let db: Database<sqlite3.Database, sqlite3.Statement>;
+// Map to store database connections for each network
+const dbConnections: Record<string, Database<sqlite3.Database, sqlite3.Statement>> = {};
 
-export async function initDb(dbPath: string) {
-  db = await open({
+export async function initDb(dbPath: string, network: string) {
+  const db = await open({
     filename: dbPath,
     driver: sqlite3.Database
   });
@@ -26,18 +27,27 @@ export async function initDb(dbPath: string) {
     );
     
     CREATE TABLE IF NOT EXISTS monitored_blocks (
-      height INTEGER,
+      height INTEGER PRIMARY KEY,
       hash TEXT NOT NULL,
-      checked BOOLEAN DEFAULT FALSE,
-      network TEXT NOT NULL,
-      PRIMARY KEY (height, network)
+      checked BOOLEAN DEFAULT FALSE
     );
   `);
+
+  // Store the connection for this network
+  dbConnections[network] = db;
+  
+  return db;
 }
 
-export function getDb() {
-  if (!db) {
-    throw new Error("Database not initialized");
+export function getDb(network: string) {
+  if (!dbConnections[network]) {
+    throw new Error(`Database for network ${network} not initialized`);
   }
-  return db;
+  return dbConnections[network];
+}
+
+export function closeAllConnections() {
+  return Promise.all(
+    Object.values(dbConnections).map(db => db.close())
+  );
 }

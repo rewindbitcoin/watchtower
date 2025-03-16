@@ -13,7 +13,7 @@ const REORG_SAFETY_MARGIN = 6;
 
 // Check if a transaction exists
 export async function checkTransaction(txid: string, vaultId: string, network: string): Promise<boolean> {
-  const db = getDb();
+  const db = getDb(network);
   
   try {
     // Check if transaction is in mempool
@@ -116,7 +116,7 @@ export async function checkTransaction(txid: string, vaultId: string, network: s
 
 // Main monitoring function
 export async function monitorTransactions(network: string) {
-  const db = getDb();
+  const db = getDb(network);
   
   try {
     // Get all pending transactions to monitor
