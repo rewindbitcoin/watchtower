@@ -5,6 +5,7 @@ initEnv(undefined, undefined, {
 });
 
 import express from "express";
+import { AddressInfo } from "net";
 import path from "path";
 import { initDb } from "./db";
 import { registerRoutes } from "./routes";
@@ -33,10 +34,14 @@ initDb(dbPath)
     // Register API routes
     registerRoutes(app);
 
+    // Parse command line arguments for port
+    const portArg = process.argv.find(arg => arg.startsWith('--port='));
+    const port = portArg ? parseInt(portArg.split('=')[1], 10) : 0; // Use 0 for random port assignment
+    
     // Start the server
-    const port = process.env.PORT || 3000;
-    app.listen(port, () => {
-      console.log(`Watchtower API (${networkType}) running on port ${port}`);
+    const server = app.listen(port, () => {
+      const address = server.address() as AddressInfo;
+      console.log(`Watchtower API (${networkType}) running on port ${address.port}`);
     });
   })
   .catch((err) => {
