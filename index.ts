@@ -10,6 +10,26 @@ import path from "path";
 import { initDb } from "./db";
 import { registerRoutes } from "./routes";
 
+// Check for help flag
+if (process.argv.includes('--help') || process.argv.includes('-h')) {
+  console.log(`
+Watchtower API for RewindBitcoin Wallet
+
+Usage:
+  npx ts-node src/index.ts [network] [options]
+
+Networks:
+  bitcoin    Bitcoin mainnet (default)
+  testnet    Bitcoin testnet
+  regtest    Bitcoin regtest
+
+Options:
+  --port=<number>    Specify the port number (random if not specified)
+  --help, -h         Show this help message
+  `);
+  process.exit(0);
+}
+
 // Get network type from command line arguments, default to bitcoin
 let networkType = "bitcoin"; // Default
 const networkArg = process.argv.find(arg => 

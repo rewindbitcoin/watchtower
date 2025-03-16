@@ -49,6 +49,11 @@ Command line options:
 npx ts-node src/index.ts [network] --port=3000
 ```
 
+Display help information:
+```bash
+npx ts-node src/index.ts --help
+```
+
 If no port is specified, a random available port will be used and displayed in the console.
 
 Supported networks:
