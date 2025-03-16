@@ -20,7 +20,6 @@ export async function initDb(dbPath: string) {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       vaultId TEXT NOT NULL,
       txid TEXT NOT NULL,
-      last_checked_height INTEGER,
       confirmed_not_exist_below_height INTEGER,
       status TEXT DEFAULT 'pending',
       FOREIGN KEY(vaultId) REFERENCES vaults(vaultId)
