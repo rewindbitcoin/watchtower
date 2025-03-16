@@ -46,7 +46,19 @@ if (!runBitcoin && !runTestnet && !runRegtest) {
   process.exit(1);
 }
 
-if (!process.env.DB_FOLDER) throw new Error("Incomplete env: DB_FOLDER");
+// Validate DB_FOLDER environment variable
+if (!process.env.DB_FOLDER) {
+  console.error("Error: DB_FOLDER environment variable is not set.");
+  console.error("Please create a .env file with DB_FOLDER=./db or set the environment variable.");
+  process.exit(1);
+}
+
+// Check if DB_FOLDER is empty or just whitespace
+if (process.env.DB_FOLDER.trim() === '') {
+  console.error("Error: DB_FOLDER environment variable is empty.");
+  console.error("Please set a valid directory path for DB_FOLDER.");
+  process.exit(1);
+}
 
 // Initialize the app
 const app = express();
