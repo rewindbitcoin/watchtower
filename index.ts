@@ -9,6 +9,7 @@ import { AddressInfo } from "net";
 import path from "path";
 import { initDb } from "./db";
 import { registerRoutes } from "./routes";
+import fs from "fs";
 
 // Check for help flag
 if (process.argv.includes("--help") || process.argv.includes("-h")) {
@@ -16,7 +17,10 @@ if (process.argv.includes("--help") || process.argv.includes("-h")) {
 Watchtower API for RewindBitcoin Wallet
 
 Usage:
-  npx ts-node src/index.ts [options]
+  npx ts-node src/index.ts --db-folder=<path> [options]
+
+Required:
+  --db-folder=<path>   Specify the folder path for database storage
 
 Options:
   --port=<number>      Specify the port number (random if not specified)
@@ -31,8 +35,9 @@ Use the disable flags to turn off specific networks.
   process.exit(0);
 }
 
-// Parse command line arguments for port
+// Parse command line arguments
 const portArg = process.argv.find((arg) => arg.startsWith("--port="));
+const dbFolderArg = process.argv.find((arg) => arg.startsWith("--db-folder="));
 const port = portArg ? parseInt(portArg.split("=")[1], 10) : 0; // Use 0 for random port assignment
 
 // Check which networks to run
@@ -46,20 +51,30 @@ if (!runBitcoin && !runTestnet && !runRegtest) {
   process.exit(1);
 }
 
-// Validate DB_FOLDER environment variable
-const dbFolder = process.env.DB_FOLDER;
-if (!dbFolder) {
-  console.error("Error: DB_FOLDER environment variable is not set.");
-  console.error(
-    "Please create a .env file with DB_FOLDER=./db or set the environment variable.",
-  );
+// Validate database folder path
+if (!dbFolderArg) {
+  console.error("Error: Database folder path is required.");
+  console.error("Please provide the --db-folder=<path> argument.");
+  console.error("Example: npx ts-node src/index.ts --db-folder=./db");
   process.exit(1);
 }
 
-// Check if DB_FOLDER is empty or just whitespace
-if (dbFolder.trim() === "") {
-  console.error("Error: DB_FOLDER environment variable is empty.");
-  console.error("Please set a valid directory path for DB_FOLDER.");
+// Extract and validate the database folder path
+const dbFolder = dbFolderArg.split("=")[1];
+if (!dbFolder || dbFolder.trim() === "") {
+  console.error("Error: Database folder path cannot be empty.");
+  console.error("Please provide a valid path with --db-folder=<path>");
+  process.exit(1);
+}
+
+// Ensure the database folder exists
+try {
+  if (!fs.existsSync(dbFolder)) {
+    console.log(`Creating database folder: ${dbFolder}`);
+    fs.mkdirSync(dbFolder, { recursive: true });
+  }
+} catch (error) {
+  console.error(`Error creating database folder: ${error}`);
   process.exit(1);
 }
 
@@ -81,8 +96,6 @@ const server = app.listen(port, async () => {
   if (runBitcoin) {
     networks.push("bitcoin");
     const dbPathBitcoin = path.join(
-      process.cwd(),
-      "..",
       dbFolder,
       "watchtower.bitcoin.sqlite",
     );
@@ -96,8 +109,6 @@ const server = app.listen(port, async () => {
   if (runTestnet) {
     networks.push("testnet");
     const dbPathTestnet = path.join(
-      process.cwd(),
-      "..",
       dbFolder,
       "watchtower.testnet.sqlite",
     );
@@ -111,8 +122,6 @@ const server = app.listen(port, async () => {
   if (runRegtest) {
     networks.push("regtest");
     const dbPathRegtest = path.join(
-      process.cwd(),
-      "..",
       dbFolder,
       "watchtower.regtest.sqlite",
     );

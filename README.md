@@ -27,26 +27,26 @@ The **Watchtower API** is a monitoring service for the **RewindBitcoin Wallet** 
 npm install
 ```
 
-### 2️⃣ Set Environment Variables
-Create a `.env` file and set the database folder path:
-```env
-DB_FOLDER=./db
+### 2️⃣ Create Database Directory
+Create a directory to store the database files:
+```bash
+mkdir -p ./db
 ```
 
 ### 3️⃣ Run the Watchtower API
 Start the server to monitor all networks:
 ```bash
-npx ts-node src/index.ts
+npx ts-node src/index.ts --db-folder=./db
 ```
 
 You can disable specific networks:
 ```bash
-npx ts-node src/index.ts --disable-bitcoin --disable-regtest
+npx ts-node src/index.ts --db-folder=./db --disable-bitcoin --disable-regtest
 ```
 
 Command line options:
 ```bash
-npx ts-node src/index.ts --port=3000 --disable-testnet
+npx ts-node src/index.ts --db-folder=./db --port=3000 --disable-testnet
 ```
 
 Display help information:
