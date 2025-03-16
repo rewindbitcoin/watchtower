@@ -39,6 +39,13 @@ Start the server with a network parameter:
 npx ts-node src/index.ts bitcoin
 ```
 
+You can specify a port using the `--port` option:
+```bash
+npx ts-node src/index.ts bitcoin --port=3000
+```
+
+If no port is specified, a random available port will be used and displayed in the console.
+
 Supported networks:
 - `bitcoin`
 - `testnet`
@@ -185,6 +192,13 @@ Start the server with a network parameter:
 ```bash
 npx ts-node src/index.ts bitcoin
 ```
+
+You can specify a port using the `--port` option:
+```bash
+npx ts-node src/index.ts bitcoin --port=3000
+```
+
+If no port is specified, a random available port will be used and displayed in the console.
 
 Supported networks:
 - `bitcoin`
