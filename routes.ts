@@ -4,17 +4,18 @@ import { sendPushNotification } from './notifications';
 
 export function registerRoutes(app: Express) {
   /**
-   * POST /register
+   * POST /register and /:networkId/register
    * Registers vaults and associates them with a push token.
    */
-  app.post('/register/:network', async (req: Request, res: Response) => {
+  app.post(['/register', '/:networkId/register'], async (req: Request, res: Response) => {
     try {
-      const network = req.params.network;
+      // Default to bitcoin if no networkId is provided in the path
+      let networkId = req.params.networkId || 'bitcoin';
       
       // Validate network parameter
-      if (!['bitcoin', 'testnet', 'regtest'].includes(network)) {
+      if (!['bitcoin', 'testnet', 'regtest'].includes(networkId)) {
         return res.status(400).json({ 
-          error: "Invalid network. Must be 'bitcoin', 'testnet', or 'regtest'" 
+          error: "Invalid networkId. Must be 'bitcoin', 'testnet', or 'regtest'" 
         });
       }
       
@@ -23,7 +24,7 @@ export function registerRoutes(app: Express) {
         return res.status(400).json({ error: "Invalid input data" });
       }
       
-      const db = getDb(network);
+      const db = getDb(networkId);
 
       // Insert or update each vault and its transaction ids.
       for (const vault of vaults) {

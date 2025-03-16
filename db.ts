@@ -4,7 +4,7 @@ import { open, Database } from 'sqlite';
 // Map to store database connections for each network
 const dbConnections: Record<string, Database<sqlite3.Database, sqlite3.Statement>> = {};
 
-export async function initDb(dbPath: string, network: string) {
+export async function initDb(dbPath: string, networkId: string) {
   const db = await open({
     filename: dbPath,
     driver: sqlite3.Database
@@ -34,16 +34,16 @@ export async function initDb(dbPath: string, network: string) {
   `);
 
   // Store the connection for this network
-  dbConnections[network] = db;
+  dbConnections[networkId] = db;
   
   return db;
 }
 
-export function getDb(network: string) {
-  if (!dbConnections[network]) {
-    throw new Error(`Database for network ${network} not initialized`);
+export function getDb(networkId: string) {
+  if (!dbConnections[networkId]) {
+    throw new Error(`Database for network ${networkId} not initialized`);
   }
-  return dbConnections[network];
+  return dbConnections[networkId];
 }
 
 export function closeAllConnections() {

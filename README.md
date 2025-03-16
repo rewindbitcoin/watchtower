@@ -103,11 +103,12 @@ The Watchtower API uses **SQLite** with the following structure:
 
 ### **1️⃣ Register Vaults to Be Monitored**
 
-**`POST /register/:network`**
+**`POST /register`** or **`POST /:networkId/register`**
 
 - **Purpose:** Registers vaults and associates them with a push notification token.
 - **URL Parameters:**
-  - `network`: The Bitcoin network (`bitcoin`, `testnet`, or `regtest`)
+  - `networkId`: The Bitcoin network (`bitcoin`, `testnet`, or `regtest`)
+  - If using `/register` without networkId, defaults to `bitcoin` mainnet
 - **Request Body:**
 
   ```json

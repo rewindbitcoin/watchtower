@@ -12,12 +12,12 @@ import { sendPushNotification, NotificationPayload } from "./notifications";
 const REORG_SAFETY_MARGIN = 6;
 
 // Check if a transaction exists
-export async function checkTransaction(txid: string, vaultId: string, network: string): Promise<boolean> {
-  const db = getDb(network);
+export async function checkTransaction(txid: string, vaultId: string, networkId: string): Promise<boolean> {
+  const db = getDb(networkId);
   
   try {
     // Check if transaction is in mempool
-    const mempoolTxids = await getMempoolTxids(network);
+    const mempoolTxids = await getMempoolTxids(networkId);
     if (mempoolTxids.includes(txid)) {
       // Transaction found in mempool
       await db.run(
@@ -34,12 +34,12 @@ export async function checkTransaction(txid: string, vaultId: string, network: s
     );
     
     // Get current block height
-    const currentHeight = parseInt(await getLatestBlockHeight(network), 10);
+    const currentHeight = parseInt(await getLatestBlockHeight(networkId), 10);
     
     // If this is the first check or we don't have a confirmed_not_exist_below_height
     if (!txInfo || !txInfo.confirmed_not_exist_below_height) {
       // Check transaction status directly
-      const status = await getTxStatus(txid, network);
+      const status = await getTxStatus(txid, networkId);
       
       if (status) {
         if (status.confirmed) {
@@ -75,8 +75,8 @@ export async function checkTransaction(txid: string, vaultId: string, network: s
       for (let height = startHeight; height <= currentHeight; height++) {
         // Check if we've already processed this block
         const blockInfo = await db.get(
-          "SELECT checked FROM monitored_blocks WHERE height = ? AND network = ?", 
-          [height, network]
+          "SELECT checked FROM monitored_blocks WHERE height = ?", 
+          [height]
         );
         
         if (blockInfo && blockInfo.checked) {
@@ -84,15 +84,15 @@ export async function checkTransaction(txid: string, vaultId: string, network: s
         }
         
         // Get block hash
-        const blockHash = await getBlockHashByHeight(height, network);
+        const blockHash = await getBlockHashByHeight(height, networkId);
         
         // Get all transactions in this block
-        const blockTxids = await getBlockTxids(blockHash, network);
+        const blockTxids = await getBlockTxids(blockHash, networkId);
         
         // Store block info
         await db.run(
-          "INSERT OR REPLACE INTO monitored_blocks (height, hash, checked, network) VALUES (?, ?, ?, ?)",
-          [height, blockHash, true, network]
+          "INSERT OR REPLACE INTO monitored_blocks (height, hash, checked) VALUES (?, ?, ?)",
+          [height, blockHash, true]
         );
         
         // Check if our txid is in this block
@@ -115,8 +115,8 @@ export async function checkTransaction(txid: string, vaultId: string, network: s
 }
 
 // Main monitoring function
-export async function monitorTransactions(network: string) {
-  const db = getDb(network);
+export async function monitorTransactions(networkId: string) {
+  const db = getDb(networkId);
   
   try {
     // Get all pending transactions to monitor
@@ -141,7 +141,7 @@ export async function monitorTransactions(network: string) {
     }
     
     // Clean up old monitored blocks (keep only recent ones)
-    const currentHeight = parseInt(await getLatestBlockHeight(network), 10);
+    const currentHeight = parseInt(await getLatestBlockHeight(networkId), 10);
     const oldestNeededHeight = await db.get(
       "SELECT MIN(confirmed_not_exist_below_height) as min_height FROM vault_txids WHERE status = 'pending'"
     );
@@ -149,22 +149,22 @@ export async function monitorTransactions(network: string) {
     if (oldestNeededHeight && oldestNeededHeight.min_height) {
       // Delete blocks that are older than the oldest needed height
       await db.run(
-        "DELETE FROM monitored_blocks WHERE height < ? AND network = ?",
-        [oldestNeededHeight.min_height, network]
+        "DELETE FROM monitored_blocks WHERE height < ?",
+        [oldestNeededHeight.min_height]
       );
     }
   } catch (error) {
-    console.error(`Error in monitorTransactions for ${network}:`, error);
+    console.error(`Error in monitorTransactions for ${networkId}:`, error);
   }
 }
 
 // Set up periodic monitoring
-export function startMonitoring(network: string, intervalMs = 60000) {
-  console.log(`Starting transaction monitoring for ${network} network`);
+export function startMonitoring(networkId: string, intervalMs = 60000) {
+  console.log(`Starting transaction monitoring for ${networkId} network`);
   
   // Run immediately on start
-  monitorTransactions(network);
+  monitorTransactions(networkId);
   
   // Then run periodically
-  return setInterval(() => monitorTransactions(network), intervalMs);
+  return setInterval(() => monitorTransactions(networkId), intervalMs);
 }
