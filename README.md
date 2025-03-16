@@ -34,20 +34,25 @@ DB_FOLDER=./db
 ```
 
 ### 3️⃣ Run the Watchtower API
-Start the server with a network parameter:
+Start the server:
 ```bash
-npx ts-node src/index.ts bitcoin
+npx ts-node src/index.ts
 ```
 
-You can specify a port using the `--port` option:
+You can specify a network type (defaults to `bitcoin` if not specified):
 ```bash
-npx ts-node src/index.ts bitcoin --port=3000
+npx ts-node src/index.ts testnet
+```
+
+Command line options:
+```bash
+npx ts-node src/index.ts [network] --port=3000
 ```
 
 If no port is specified, a random available port will be used and displayed in the console.
 
 Supported networks:
-- `bitcoin`
+- `bitcoin` (default)
 - `testnet`
 - `regtest`
 

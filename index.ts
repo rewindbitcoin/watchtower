@@ -10,15 +10,15 @@ import path from "path";
 import { initDb } from "./db";
 import { registerRoutes } from "./routes";
 
-const networkType = process.argv[2];
-if (
-  networkType !== "bitcoin" &&
-  networkType !== "testnet" &&
-  networkType !== "regtest"
-) {
-  throw new Error(
-    "Invalid network type. Must be 'bitcoin', 'testnet', or 'regtest'",
-  );
+// Get network type from command line arguments, default to bitcoin
+let networkType = "bitcoin"; // Default
+const networkArg = process.argv.find(arg => 
+  !arg.startsWith('--') && 
+  (arg === "bitcoin" || arg === "testnet" || arg === "regtest")
+);
+
+if (networkArg) {
+  networkType = networkArg;
 }
 
 if (!process.env.DB_FOLDER) throw new Error("Incomplete env: DB_FOLDER");
