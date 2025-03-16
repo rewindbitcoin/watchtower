@@ -1,0 +1,17 @@
+{
+  "name": "@rewindbitcoin/watchtower",
+  "version": "1.0.0",
+  "type": "commonjs",
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@rewindbitcoin/env": "github:rewindbitcoin/env#v33",
+    "express": "^4.21.2",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0"
+  }
+}
