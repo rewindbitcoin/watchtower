@@ -10,7 +10,7 @@ export function registerRoutes(app: Express) {
   app.post(['/register', '/:networkId/register'], async (req: Request, res: Response) => {
     try {
       // Default to bitcoin if no networkId is provided in the path
-      let networkId = req.params.networkId || 'bitcoin';
+      const networkId = req.params.networkId || 'bitcoin';
       
       // Validate network parameter
       if (!['bitcoin', 'testnet', 'regtest'].includes(networkId)) {
