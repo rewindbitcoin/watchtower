@@ -89,7 +89,7 @@ The Watchtower API uses **SQLite** with the following structure:
 |----------|------|-------------|
 | `pushToken` | TEXT | Device push notification token |
 | `vaultId` | TEXT | Associated vault ID |
-| `status` | TEXT | Status: 'pending', 'notified_reversible', or 'notified_irreversible' |
+| `status` | TEXT | Status: 'pending' (notification not sent yet) or 'sent' (notification already sent) |
 
 **Vault Transactions Table:**
 | Column | Type | Description |

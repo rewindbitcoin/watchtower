@@ -38,9 +38,13 @@ export function registerRoutes(app: Express) {
             return;
           }
 
-          // Check if this vault has already been notified as irreversible
+          // Check if this vault has already been notified and transaction is irreversible
           const existingNotification = await db.get(
-            "SELECT status FROM notifications WHERE vaultId = ? AND status = 'notified_irreversible' LIMIT 1",
+            `SELECT n.status 
+             FROM notifications n
+             JOIN vault_txids vt ON n.vaultId = vt.vaultId
+             WHERE n.vaultId = ? AND n.status = 'sent' AND vt.status = 'irreversible' 
+             LIMIT 1`,
             [vaultId],
           );
 

@@ -29,7 +29,7 @@ async function sendNotifications(networkId: string) {
     SELECT n.pushToken, n.vaultId, vt.txid, vt.status
     FROM notifications n
     JOIN vault_txids vt ON n.vaultId = vt.vaultId
-    WHERE n.status = 'pending' AND (vt.status = 'reversible' OR vt.status = 'irreversible')
+    WHERE n.status = 'pending' AND (vt.status = 'reversible' OR vt.status = 'irreversible' OR vt.status = 'mempool')
   `);
 
   for (const notification of notificationsToSend) {
@@ -46,22 +46,14 @@ async function sendNotifications(networkId: string) {
         },
       });
 
-      // Update notification status based on transaction status
-      let notificationStatus;
-      if (notification.status === "irreversible") {
-        notificationStatus = "notified_irreversible";
-      } else {
-        notificationStatus = "notified_reversible";
-      }
-
-      // Update notification status
+      // Update notification status to 'sent'
       await db.run(
-        "UPDATE notifications SET status = ? WHERE vaultId = ? AND pushToken = ?",
-        [notificationStatus, notification.vaultId, notification.pushToken],
+        "UPDATE notifications SET status = 'sent' WHERE vaultId = ? AND pushToken = ?",
+        [notification.vaultId, notification.pushToken],
       );
 
       console.log(
-        `Notification sent for vault ${notification.vaultId} to device ${notification.pushToken} (${notificationStatus})`,
+        `Notification sent for vault ${notification.vaultId} to device ${notification.pushToken} (tx status: ${notification.status})`,
       );
     } catch (error) {
       console.error(
@@ -185,12 +177,24 @@ async function monitorTransactions(networkId: string): Promise<void> {
           } else {
             // This transaction cannot be found anymore!
             // This means either reorg or purged from the mempool.
-            //TODO: here reset the notifications for this vaultId to
-            //pending
+            
+            // Reset the transaction status
             await db.run("UPDATE vault_txids SET status = ? WHERE txid = ?", [
               "unseen",
               tx.txid,
             ]);
+            
+            // Reset notifications for this transaction's vaultId back to pending
+            // so they can be sent again if the transaction reappears
+            await db.run(`
+              UPDATE notifications 
+              SET status = 'pending' 
+              WHERE vaultId IN (
+                SELECT vaultId FROM vault_txids WHERE txid = ?
+              )
+            `, [tx.txid]);
+            
+            console.log(`Reset notifications for txid ${tx.txid} due to transaction disappearance (reorg or mempool purge)`);
           }
         }
       }

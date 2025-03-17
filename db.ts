@@ -15,7 +15,7 @@ export async function initDb(dbPath: string, networkId: string) {
     CREATE TABLE IF NOT EXISTS notifications (
       pushToken TEXT NOT NULL,
       vaultId TEXT NOT NULL,
-      status TEXT DEFAULT 'pending',
+      status TEXT DEFAULT 'pending', -- 'pending' or 'sent'
       PRIMARY KEY (pushToken, vaultId)
     );
 
