@@ -153,14 +153,15 @@ The Watchtower API uses **SQLite** with the following structure:
 
 The Watchtower uses an efficient monitoring strategy to minimize API calls:
 
-1. **On startup:** Initialize with the last checked block height from the database
-   or current height minus IRREVERSIBLE_THRESHOLD if starting fresh.
+1. **On startup:** Initialize with the last checked block height minus
+   IRREVERSIBLE_THRESHOLD from the database or current height (minus
+   IRREVERSIBLE_THRESHOLD) if starting fresh.
 
 2. **For each monitoring cycle:**
    - Get all new blocks since the last checked height
    - Check if any pending transactions appear in these blocks
    - Send notifications to all devices for found transactions
-   - Mark notifications as 'notified_reversible' or 'notified_irreversible'
+   - Mark notifications as 'sent' or 'pending'
    - Update the last checked height
 
 3. **Reorg handling:** Recheck the last 6 blocks (IRREVERSIBLE_THRESHOLD) on each
@@ -188,24 +189,6 @@ vault is accessed.
   "body": "Your vault vault123 is being accessed!",
   "data": { "vaultId": "vault123" }
 }
-```
-
----
-
-## 🛡 Security Considerations
-
-- **Rate limiting** to prevent abuse.
-- **Input validation** for incoming requests.
-- **Authentication (optional)** for secure access.
-
----
-
-## ✅ Running Tests
-
-Run unit tests using Jest:
-
-```bash
-npm test
 ```
 
 ---
