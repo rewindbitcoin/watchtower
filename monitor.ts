@@ -161,7 +161,7 @@ async function monitorTransactions(networkId: string): Promise<void> {
           SELECT vt.vaultId, vt.txid, vt.status
           FROM vault_txids vt
           JOIN notifications n ON vt.vaultId = n.vaultId
-          WHERE n.status = 'pending' AND (vt.status = 'unknown' OR vt.status = 'pending' OR vt.status = 'reversible')
+          WHERE n.status = 'pending' AND (vt.status = 'pending' OR vt.status = 'reversible')
           GROUP BY vt.txid
         `);
 
