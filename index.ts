@@ -165,26 +165,32 @@ const server = app.listen(port, async () => {
   const shutdown = async (signal: string) => {
     console.log(`\n${signal} received. Shutting down gracefully...`);
     
-    // Stop all monitoring loops
+    // Stop all monitoring loops and wait for them to complete
     console.log("Stopping monitoring loops...");
-    stopFunctions.forEach(stop => stop());
+    const stopPromises = stopFunctions.map(stop => stop());
+    await Promise.all(stopPromises);
+    console.log("All monitoring loops stopped successfully");
     
     // Close server
     console.log("Closing HTTP server...");
-    server.close(() => {
-      console.log("HTTP server closed.");
-      
-      // Close database connections
-      console.log("Closing database connections...");
-      closeAllConnections().then(() => {
-        console.log("All database connections closed.");
-        console.log("Shutdown complete.");
-        process.exit(0);
-      }).catch(err => {
-        console.error("Error closing database connections:", err);
-        process.exit(1);
+    await new Promise<void>((resolve) => {
+      server.close(() => {
+        console.log("HTTP server closed.");
+        resolve();
       });
     });
+    
+    // Close database connections
+    console.log("Closing database connections...");
+    try {
+      await closeAllConnections();
+      console.log("All database connections closed.");
+      console.log("Shutdown complete.");
+      process.exit(0);
+    } catch (err) {
+      console.error("Error closing database connections:", err);
+      process.exit(1);
+    }
     
     // Force exit after timeout if graceful shutdown fails
     setTimeout(() => {

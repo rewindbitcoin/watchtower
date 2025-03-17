@@ -266,7 +266,7 @@ export function startMonitoring(networkId: string, intervalMs = 60000) {
   })();
 
   // Return a function that can be used to stop the monitoring
-  return () => {
+  return (): Promise<void> => {
     running = false;
     console.log(`Stopping monitoring for ${networkId}. Waiting for current cycle to complete...`);
     
