@@ -179,39 +179,13 @@ async function monitorTransactions(networkId: string): Promise<void> {
           } else if (mempoolTxids.includes(tx.txid)) {
             // Transaction is in mempool
             await db.run("UPDATE vault_txids SET status = ? WHERE txid = ?", [
-              "unseen",
+              "reversible",
               tx.txid,
             ]);
-          } else if (tx.status === "unknown") {
-            // For unknown transactions, check status directly
-            const txStatus = await getTxStatus(tx.txid, networkId);
-
-            if (txStatus && txStatus.confirmed) {
-              const confirmations = currentHeight - txStatus.block_height + 1;
-              const newStatus =
-                confirmations >= IRREVERSIBLE_THRESHOLD
-                  ? "irreversible"
-                  : "reversible";
-
-              await db.run("UPDATE vault_txids SET status = ? WHERE txid = ?", [
-                newStatus,
-                tx.txid,
-              ]);
-            } else if (txStatus) {
-              // Transaction exists but not confirmed
-              await db.run("UPDATE vault_txids SET status = ? WHERE txid = ?", [
-                "unseen",
-                tx.txid,
-              ]);
-            }
-            // If txStatus is null, keep as unknown
           }
         }
       }
     }
-
-    // Reorg checking removed for now - will be implemented later
-
     // Send notifications for triggered vaults
     await sendNotifications(networkId);
 
