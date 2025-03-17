@@ -195,19 +195,10 @@ async function monitorTransactions(networkId: string): Promise<void> {
 
       // This section handles transaction disappearance detection
       // A transaction can disappear due to:
-      // 1. Blockchain reorganization (reorg) - when a chain of blocks is replaced by a longer chain
-      // 2. Mempool purge - when a transaction is evicted from the mempool due to low fees, conflicts, or timeout
-      //
-      // We detect disappearances by:
-      // 1. Getting all transactions marked as "reversible" (in mempool or with < IRREVERSIBLE_THRESHOLD confirmations)
-      // 2. Checking if each transaction exists in either:
-      //    a. Recently scanned blocks (from reorgSafeStartHeight to currentHeight)
-      //    b. Current mempool
-      // 3. If a transaction is not found in either place, we consider it disappeared
-      //
-      // When a transaction disappears:
-      // 1. We reset its status to "unseen" so it can be detected again if it reappears
-      // 2. We reset any notifications for the associated vault to "pending" so they can be sent again
+      // 1. Blockchain reorganization (reorg) - when a chain of blocks is
+      //    replaced by a longer chain
+      // 2. Mempool purge - when a transaction is evicted from the mempool due
+      //    to low fees, conflicts, or timeout
       const txsToCheck = await db.all(`
           SELECT txid, status
           FROM vault_txids
