@@ -15,6 +15,7 @@ const IRREVERSIBLE_THRESHOLD = 6;
 const checkedBlocks: Record<string, Set<string>> = {
   bitcoin: new Set(),
   testnet: new Set(),
+  tape: new Set(),
   regtest: new Set(),
 };
 

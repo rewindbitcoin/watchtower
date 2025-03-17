@@ -4,6 +4,7 @@ import path from "path";
 import { initDb } from "./db";
 import { registerRoutes } from "./routes";
 import { startMonitoring } from "./monitor";
+import { setRegtestApiUrl } from "./blockchain";
 import fs from "fs";
 
 // Check for help flag
@@ -21,11 +22,12 @@ Options:
   --port=<number>      Specify the port number (random if not specified)
   --disable-bitcoin    Disable Bitcoin mainnet monitoring
   --disable-testnet    Disable Bitcoin testnet monitoring
-  --disable-regtest    Disable Bitcoin regtest monitoring
+  --disable-tape       Disable Tape network monitoring
+  --enable-regtest=<url> Enable Bitcoin regtest with custom Esplora API URL
   --help, -h           Show this help message
 
-By default, the watchtower runs for all networks (bitcoin, testnet, regtest).
-Use the disable flags to turn off specific networks.
+By default, the watchtower runs for bitcoin, testnet, and tape networks.
+Regtest is disabled by default and must be explicitly enabled with a valid Esplora API URL.
   `);
   process.exit(0);
 }
@@ -33,15 +35,17 @@ Use the disable flags to turn off specific networks.
 // Parse command line arguments
 const portArg = process.argv.find((arg) => arg.startsWith("--port="));
 const dbFolderArg = process.argv.find((arg) => arg.startsWith("--db-folder="));
+const enableRegtestArg = process.argv.find((arg) => arg.startsWith("--enable-regtest="));
 const port = portArg ? parseInt(portArg.split("=")[1], 10) : 0; // Use 0 for random port assignment
 
 // Check which networks to run
 const runBitcoin = !process.argv.includes("--disable-bitcoin");
 const runTestnet = !process.argv.includes("--disable-testnet");
-const runRegtest = !process.argv.includes("--disable-regtest");
+const runTape = !process.argv.includes("--disable-tape");
+const regtestApiUrl = enableRegtestArg ? enableRegtestArg.split("=")[1] : null;
 
 // Ensure at least one network is enabled
-if (!runBitcoin && !runTestnet && !runRegtest) {
+if (!runBitcoin && !runTestnet && !runTape && !regtestApiUrl) {
   console.error("Error: At least one network must be enabled.");
   process.exit(1);
 }
@@ -112,14 +116,28 @@ const server = app.listen(port, async () => {
     startMonitoring("testnet", 60000);
   }
 
-  if (runRegtest) {
+  if (runTape) {
+    networks.push("tape");
+    const dbPathTape = path.join(dbFolder, "watchtower.tape.sqlite");
+    await initDb(dbPathTape, "tape").catch((err) => {
+      console.error("Failed to initialize Tape DB:", err);
+      process.exit(1);
+    });
+    console.log("Tape network monitoring enabled");
+    // Start monitoring for tape
+    startMonitoring("tape", 60000);
+  }
+
+  if (regtestApiUrl) {
     networks.push("regtest");
+    // Set the custom API URL for regtest
+    setRegtestApiUrl(regtestApiUrl);
     const dbPathRegtest = path.join(dbFolder, "watchtower.regtest.sqlite");
     await initDb(dbPathRegtest, "regtest").catch((err) => {
       console.error("Failed to initialize Regtest DB:", err);
       process.exit(1);
     });
-    console.log("Bitcoin regtest monitoring enabled");
+    console.log(`Bitcoin regtest monitoring enabled with API: ${regtestApiUrl}`);
     // Start monitoring for regtest
     startMonitoring("regtest", 30000); // Faster polling for regtest
   }

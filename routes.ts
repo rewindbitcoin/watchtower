@@ -14,10 +14,10 @@ export function registerRoutes(app: Express) {
         const networkId = req.params.networkId || "bitcoin";
 
         // Validate network parameter
-        if (!["bitcoin", "testnet", "regtest"].includes(networkId)) {
+        if (!["bitcoin", "testnet", "tape", "regtest"].includes(networkId)) {
           res.status(400).json({
             error:
-              "Invalid networkId. Must be 'bitcoin', 'testnet', or 'regtest'",
+              "Invalid networkId. Must be 'bitcoin', 'testnet', 'tape', or 'regtest'",
           });
           return;
         }

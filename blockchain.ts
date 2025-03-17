@@ -4,8 +4,20 @@
 const API_BASE_URLS = {
   bitcoin: 'https://blockstream.info/api',
   testnet: 'https://blockstream.info/testnet/api',
-  regtest: 'http://localhost:3002/api' // Assuming local regtest explorer
+  tape: 'https://tape.rewindbitcoin.com/api',
+  regtest: '' // This will be set dynamically
 };
+
+// Function to set custom API URL for regtest
+export function setRegtestApiUrl(url: string): void {
+  if (!url.endsWith('/')) {
+    url = url + '/';
+  }
+  if (!url.endsWith('api/')) {
+    url = url.endsWith('api') ? url + '/' : url + 'api/';
+  }
+  API_BASE_URLS.regtest = url;
+}
 
 export async function getLatestBlockHeight(network: string = 'bitcoin'): Promise<string> {
   const baseUrl = API_BASE_URLS[network as keyof typeof API_BASE_URLS];
