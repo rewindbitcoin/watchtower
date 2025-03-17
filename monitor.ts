@@ -88,13 +88,12 @@ async function monitorTransactions(networkId: string): Promise<void> {
     const currentHeight = parseInt(await getLatestBlockHeight(networkId), 10);
     const mempoolTxids = await getMempoolTxids(networkId);
 
-    // If this is the first run - use direct transaction status checks
     if (!lastCheckedHeight) {
-      console.log(
-        `First run for ${networkId}: Checking all pending transactions directly`,
-      );
-      // Check all unknown transactions directly
-      const unknownTxs = await db.all(`
+      console.log(`First run for ${networkId}`);
+      //TODO: make sure all the vault_txids.status are unknown or throw
+    }
+    // Check all unknown transactions directly
+    const unknownTxs = await db.all(`
         SELECT vt.vaultId, vt.txid 
         FROM vault_txids vt
         JOIN notifications n ON vt.vaultId = n.vaultId
@@ -102,33 +101,34 @@ async function monitorTransactions(networkId: string): Promise<void> {
         GROUP BY vt.txid
       `);
 
-      for (const tx of unknownTxs) {
-        const txStatus = await getTxStatus(tx.txid, networkId);
+    for (const tx of unknownTxs) {
+      const txStatus = await getTxStatus(tx.txid, networkId);
 
-        if (txStatus && txStatus.confirmed) {
-          // Transaction is confirmed in a block
-          const confirmations = currentHeight - txStatus.block_height + 1;
-          const status =
-            confirmations >= IRREVERSIBLE_THRESHOLD
-              ? "irreversible"
-              : "reversible";
+      if (txStatus && txStatus.confirmed) {
+        // Transaction is confirmed in a block
+        const confirmations = currentHeight - txStatus.block_height + 1;
+        const status =
+          confirmations >= IRREVERSIBLE_THRESHOLD
+            ? "irreversible"
+            : "reversible";
 
-          await db.run("UPDATE vault_txids SET status = ? WHERE txid = ?", [
-            status,
-            tx.txid,
-          ]);
-        } else if (mempoolTxids.includes(tx.txid)) {
-          // Transaction is in mempool
-          await db.run("UPDATE vault_txids SET status = ? WHERE txid = ?", [
-            "pending",
-            tx.txid,
-          ]);
-        } else {
-          // Transaction not found, keep as unknown
-          // No update needed
-        }
+        await db.run("UPDATE vault_txids SET status = ? WHERE txid = ?", [
+          status,
+          tx.txid,
+        ]);
+      } else if (mempoolTxids.includes(tx.txid)) {
+        // Transaction is in mempool
+        await db.run("UPDATE vault_txids SET status = ? WHERE txid = ?", [
+          "pending",
+          tx.txid,
+        ]);
+      } else {
+        // Transaction not found, keep as unknown
+        // No update needed
       }
-    } else {
+    }
+
+    if (lastCheckedHeight) {
       console.log(
         `Resuming ${networkId} monitoring from block height ${lastCheckedHeight}`,
       );
