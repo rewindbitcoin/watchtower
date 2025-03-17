@@ -106,11 +106,9 @@ async function monitorTransactions(networkId: string): Promise<void> {
     }
     // Check all unknown transactions directly
     const unknownTxs = await db.all(`
-        SELECT vt.vaultId, vt.txid 
-        FROM vault_txids vt
-        JOIN notifications n ON vt.vaultId = n.vaultId
-        WHERE n.status = 'pending' AND vt.status = 'unknown'
-        GROUP BY vt.txid
+        SELECT vaultId, txid 
+        FROM vault_txids
+        WHERE status = 'unknown'
       `);
 
     for (const tx of unknownTxs) {
