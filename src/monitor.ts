@@ -186,9 +186,10 @@ async function monitorTransactions(networkId: string): Promise<void> {
               "reversible",
               tx.txid,
             ]);
-          } else {
-            // This transaction cannot be found anymore!
-            // This means either reorg or purged from the mempool.
+          } else if (tx.status === "reversible") {
+            // This reversible transaction cannot be found anymore in the last
+            // IRREVERSIBLE_THRESHOLD blocks!
+            // This means it was either reorg or purged from the mempool.
 
             // Reset the transaction status
             await db.run("UPDATE vault_txids SET status = ? WHERE txid = ?", [
