@@ -228,9 +228,18 @@ async function monitorTransactions(networkId: string): Promise<void> {
       networkId,
       currentHeight,
     });
-    // Only update the last checked height after all checks are complete
+    
+    // Create table if it doesn't exist and insert/update the last checked height
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS network_state (
+        id INTEGER PRIMARY KEY,
+        last_checked_height INTEGER
+      )
+    `);
+    
+    // Use INSERT OR REPLACE to handle both first-time and subsequent updates
     await db.run(
-      "UPDATE network_state SET last_checked_height = ? WHERE id = 1",
+      "INSERT OR REPLACE INTO network_state (id, last_checked_height) VALUES (1, ?)",
       [currentHeight],
     );
 
