@@ -29,7 +29,7 @@ async function sendNotifications(networkId: string) {
     SELECT n.pushToken, n.vaultId, vt.txid, vt.status
     FROM notifications n
     JOIN vault_txids vt ON n.vaultId = vt.vaultId
-    WHERE n.status = 'pending' AND (vt.status = 'reversible' OR vt.status = 'irreversible' OR vt.status = 'unseen')
+    WHERE n.status = 'pending' AND (vt.status = 'reversible' OR vt.status = 'irreversible')
   `);
 
   for (const notification of notificationsToSend) {
@@ -180,6 +180,12 @@ async function monitorTransactions(networkId: string): Promise<void> {
             // Transaction is in mempool
             await db.run("UPDATE vault_txids SET status = ? WHERE txid = ?", [
               "reversible",
+              tx.txid,
+            ]);
+          } else {
+            // Transactions that cannot be found anymore (reorg or missing from mempool)
+            await db.run("UPDATE vault_txids SET status = ? WHERE txid = ?", [
+              "unseen",
               tx.txid,
             ]);
           }
