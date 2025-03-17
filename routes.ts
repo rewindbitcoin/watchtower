@@ -57,9 +57,9 @@ export function registerRoutes(app: Express) {
             `INSERT OR IGNORE INTO notifications (pushToken, vaultId, status) VALUES (?, ?, 'pending')`,
             [pushToken, vaultId],
           );
-          
+
           // If changes === 0, the entry already existed, so skip processing txids
-          if (result.changes > 0) {
+          if (result.changes || 0 > 0) {
             // Process each transaction ID only if this is a new notification
             for (const txid of triggerTxIds) {
               // Check if this txid is already being monitored
@@ -67,31 +67,17 @@ export function registerRoutes(app: Express) {
                 "SELECT txid FROM vault_txids WHERE txid = ?",
                 [txid],
               );
-  
               if (!existing) {
                 // Insert new transaction to monitor with default status of 'unknown'
                 await db.run(
                   "INSERT INTO vault_txids (txid, vaultId, status) VALUES (?, ?, 'unknown')",
                   [txid, vaultId],
                 );
-              } else if (existing.vaultId !== vaultId) {
-                // If txid exists but is associated with a different vault, update it
-                await db.run(
-                  "UPDATE vault_txids SET vaultId = ? WHERE txid = ?",
-                  [vaultId, txid],
-                );
               }
             }
           } else {
-            console.log(`Notification for vault ${vaultId} and push token ${pushToken} already exists, skipping txid processing`);
-          }
-
-          // Remove any txids that are no longer in the list
-          if (triggerTxIds.length > 0) {
-            const placeholders = triggerTxIds.map(() => "?").join(",");
-            await db.run(
-              `DELETE FROM vault_txids WHERE vaultId = ? AND txid NOT IN (${placeholders})`,
-              [vaultId, ...triggerTxIds],
+            console.log(
+              `Notification for vault ${vaultId} and push token ${pushToken} already exists, skipping txid processing`,
             );
           }
         }
