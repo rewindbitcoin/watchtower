@@ -1,7 +1,7 @@
 import express from "express";
 import { AddressInfo } from "net";
 import path from "path";
-import { initDb } from "./db";
+import { initDb, closeAllConnections } from "./db";
 import { registerRoutes } from "./routes";
 import { startMonitoring } from "./monitor";
 import { setRegtestApiUrl } from "./blockchain";
@@ -105,6 +105,7 @@ const server = app.listen(port, async () => {
 
   // Initialize databases for each enabled network
   const networks = [];
+  const stopFunctions: Array<() => void> = [];
 
   if (runBitcoin) {
     networks.push("bitcoin");
@@ -115,7 +116,7 @@ const server = app.listen(port, async () => {
     });
     console.log("Bitcoin mainnet monitoring enabled");
     // Start monitoring for bitcoin
-    startMonitoring("bitcoin", 60000);
+    stopFunctions.push(startMonitoring("bitcoin", 60000));
   }
 
   if (runTestnet) {
@@ -127,7 +128,7 @@ const server = app.listen(port, async () => {
     });
     console.log("Bitcoin testnet monitoring enabled");
     // Start monitoring for testnet
-    startMonitoring("testnet", 60000);
+    stopFunctions.push(startMonitoring("testnet", 60000));
   }
 
   if (runTape) {
@@ -137,9 +138,9 @@ const server = app.listen(port, async () => {
       console.error("Failed to initialize Tape DB:", err);
       process.exit(1);
     });
-    console.log("Tape network monitoring enabled");
+    console.log("Tape network enabled");
     // Start monitoring for tape
-    startMonitoring("tape", 60000);
+    stopFunctions.push(startMonitoring("tape", 60000));
   }
 
   if (regtestApiUrl) {
@@ -155,8 +156,44 @@ const server = app.listen(port, async () => {
       `Bitcoin regtest monitoring enabled with API: ${regtestApiUrl}`,
     );
     // Start monitoring for regtest
-    startMonitoring("regtest", 30000); // Faster polling for regtest
+    stopFunctions.push(startMonitoring("regtest", 30000)); // Faster polling for regtest
   }
 
   console.log(`Monitoring networks: ${networks.join(", ")}`);
+
+  // Setup graceful shutdown
+  const shutdown = async (signal: string) => {
+    console.log(`\n${signal} received. Shutting down gracefully...`);
+    
+    // Stop all monitoring loops
+    console.log("Stopping monitoring loops...");
+    stopFunctions.forEach(stop => stop());
+    
+    // Close server
+    console.log("Closing HTTP server...");
+    server.close(() => {
+      console.log("HTTP server closed.");
+      
+      // Close database connections
+      console.log("Closing database connections...");
+      closeAllConnections().then(() => {
+        console.log("All database connections closed.");
+        console.log("Shutdown complete.");
+        process.exit(0);
+      }).catch(err => {
+        console.error("Error closing database connections:", err);
+        process.exit(1);
+      });
+    });
+    
+    // Force exit after timeout if graceful shutdown fails
+    setTimeout(() => {
+      console.error("Forced shutdown after timeout!");
+      process.exit(1);
+    }, 10000);
+  };
+
+  // Handle termination signals
+  process.on('SIGINT', () => shutdown('SIGINT')); // CTRL+C
+  process.on('SIGTERM', () => shutdown('SIGTERM')); // kill
 });

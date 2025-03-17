@@ -237,6 +237,7 @@ export function startMonitoring(networkId: string, intervalMs = 60000) {
 
   // Flag to allow stopping the monitoring loop
   let running = true;
+  let currentCycle: Promise<void> | null = null;
 
   // Start the monitoring loop
   (async () => {
@@ -244,22 +245,43 @@ export function startMonitoring(networkId: string, intervalMs = 60000) {
       try {
         // Run the monitoring cycle
         console.log(`Starting monitoring cycle for ${networkId}`);
-        await monitorTransactions(networkId);
+        currentCycle = monitorTransactions(networkId);
+        await currentCycle;
+        currentCycle = null;
         console.log(
           `Completed monitoring cycle for ${networkId}, sleeping for ${intervalMs}ms`,
         );
       } catch (error) {
         console.error(`Error in monitoring cycle for ${networkId}:`, error);
+        currentCycle = null;
       }
 
-      // Wait for the specified interval before the next cycle
-      await sleep(intervalMs);
+      // Only sleep if we're still running
+      if (running) {
+        // Wait for the specified interval before the next cycle
+        await sleep(intervalMs);
+      }
     }
+    console.log(`Monitoring loop for ${networkId} has exited cleanly`);
   })();
 
   // Return a function that can be used to stop the monitoring
   return () => {
     running = false;
-    console.log(`Stopping monitoring for ${networkId}`);
+    console.log(`Stopping monitoring for ${networkId}. Waiting for current cycle to complete...`);
+    
+    // Return a promise that resolves when the current cycle completes
+    return new Promise<void>((resolve) => {
+      if (currentCycle) {
+        // If there's a cycle running, wait for it to complete
+        currentCycle.finally(() => {
+          console.log(`Current cycle for ${networkId} completed after stop request`);
+          resolve();
+        });
+      } else {
+        // If no cycle is running, resolve immediately
+        resolve();
+      }
+    });
   };
 }
