@@ -7,21 +7,23 @@ export function registerRoutes(app: Express) {
    * POST /register and /:networkId/register
    * Registers vaults and associates them with a push token.
    */
-  app.post(['/register', '/:networkId/register'], async (req: Request, res: Response) => {
+  app.post(['/register', '/:networkId/register'], async (req: Request, res: Response): Promise<void> => {
     try {
       // Default to bitcoin if no networkId is provided in the path
       const networkId = req.params.networkId || 'bitcoin';
       
       // Validate network parameter
       if (!['bitcoin', 'testnet', 'regtest'].includes(networkId)) {
-        return res.status(400).json({ 
+        res.status(400).json({ 
           error: "Invalid networkId. Must be 'bitcoin', 'testnet', or 'regtest'" 
         });
+        return;
       }
       
       const { pushToken, vaults } = req.body;
       if (!pushToken || !Array.isArray(vaults)) {
-        return res.status(400).json({ error: "Invalid input data" });
+        res.status(400).json({ error: "Invalid input data" });
+        return;
       }
       
       const db = getDb(networkId);
@@ -30,7 +32,8 @@ export function registerRoutes(app: Express) {
       for (const vault of vaults) {
         const { vaultId, triggerTxIds } = vault;
         if (!vaultId || !Array.isArray(triggerTxIds)) {
-          return res.status(400).json({ error: "Invalid vault data" });
+          res.status(400).json({ error: "Invalid vault data" });
+          return;
         }
 
         // Check if this vault has already been notified as irreversible
@@ -40,10 +43,11 @@ export function registerRoutes(app: Express) {
         );
 
         if (existingNotification) {
-          return res.status(409).json({ 
+          res.status(409).json({ 
             error: "Vault already accessed", 
             message: `Vault ${vaultId} has already been accessed and cannot be registered again.`
           });
+          return;
         }
 
         // Insert or ignore notification entry
@@ -84,10 +88,12 @@ export function registerRoutes(app: Express) {
           );
         }
       }
-      return res.sendStatus(200);
+      res.sendStatus(200);
+      return;
     } catch (err: any) {
       console.error("Error in /register:", err);
-      return res.status(500).json({ error: "Internal server error" });
+      res.status(500).json({ error: "Internal server error" });
+      return;
     }
   });
 
