@@ -79,6 +79,12 @@ async function monitorTransactions(networkId: string): Promise<void> {
 
     const lastCheckedHeight = state?.last_checked_height || 0;
     const currentHeight = parseInt(await getLatestBlockHeight(networkId), 10);
+    console.warn(`TRACE monitor of ${networkId}`, {
+      state,
+      networkId,
+      lastCheckedHeight,
+      currentHeight,
+    });
 
     if (!lastCheckedHeight) {
       console.log(`First run for ${networkId}`);
@@ -103,6 +109,11 @@ async function monitorTransactions(networkId: string): Promise<void> {
         WHERE status = 'unchecked'
       `);
 
+    if (uncheckedTxs.length) {
+      console.log(
+        `Checking status of ${uncheckedTxs.length} unchecked transactions on ${networkId} network`,
+      );
+    }
     for (const tx of uncheckedTxs) {
       const txStatus = await getTxStatus(tx.txid, networkId);
 
@@ -128,6 +139,11 @@ async function monitorTransactions(networkId: string): Promise<void> {
           tx.txid,
         ]);
       }
+    }
+    if (uncheckedTxs.length) {
+      console.log(
+        `Completed checking ${uncheckedTxs.length} transactions on ${networkId} network`,
+      );
     }
 
     if (lastCheckedHeight) {
@@ -208,6 +224,10 @@ async function monitorTransactions(networkId: string): Promise<void> {
     // Send notifications for triggered vaults
     await sendNotifications(networkId);
 
+    console.warn(`TRACE update network_state on ${networkId}`, {
+      networkId,
+      currentHeight,
+    });
     // Only update the last checked height after all checks are complete
     await db.run(
       "UPDATE network_state SET last_checked_height = ? WHERE id = 1",
