@@ -143,7 +143,7 @@ async function monitorTransactions(networkId: string): Promise<void> {
     if (lastCheckedHeight) {
       const reorgSafeStartHeight = lastCheckedHeight - IRREVERSIBLE_THRESHOLD;
       console.log(
-        `Resuming ${networkId} monitoring from block height ${reorgSafeStartHeight} (accounting for possible reorgs)`,
+        `Resuming ${networkId} monitoring from block height ${reorgSafeStartHeight} to ${currentHeight} (accounting for possible reorgs)`,
       );
       const mempoolTxids = await getMempoolTxids(networkId);
       // Process all blocks from last checked to current.
