@@ -86,7 +86,6 @@ async function monitorTransactions(networkId: string): Promise<void> {
 
     const lastCheckedHeight = state.last_checked_height || 0;
     const currentHeight = parseInt(await getLatestBlockHeight(networkId), 10);
-    const mempoolTxids = await getMempoolTxids(networkId);
 
     if (!lastCheckedHeight) {
       console.log(`First run for ${networkId}`);
@@ -142,25 +141,20 @@ async function monitorTransactions(networkId: string): Promise<void> {
       console.log(
         `Resuming ${networkId} monitoring from block height ${lastCheckedHeight}`,
       );
-      // Process all blocks from last checked to current
+      const mempoolTxids = await getMempoolTxids(networkId);
+      // Process all blocks from last checked to current.
+      // Consider possible reorg by start the search IRREVERSIBLE_THRESHOLD
+      // blocks before the last checked.
       for (
-        let height = lastCheckedHeight + 1;
+        let height = lastCheckedHeight - IRREVERSIBLE_THRESHOLD;
         height <= currentHeight;
         height++
       ) {
-        // Get block hash for this height
         const blockHash = await getBlockHashByHeight(height, networkId);
-        
-        // Skip if we've already checked this block hash in this session
-        if (checkedBlocks[networkId].has(blockHash)) {
-          continue;
-        }
-
-        // Get transactions for this block
-        const blockTxids = await getBlockTxids(blockHash, networkId);
-
-        // Add block hash to in-memory cache
+        if (checkedBlocks[networkId].has(blockHash)) continue;
         checkedBlocks[networkId].add(blockHash);
+
+        const blockTxids = await getBlockTxids(blockHash, networkId);
 
         // Get all transactions that need checking
         const txsToCheck = await db.all(`
