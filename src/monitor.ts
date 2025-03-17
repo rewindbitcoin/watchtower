@@ -146,7 +146,7 @@ async function monitorTransactions(networkId: string): Promise<void> {
         `Resuming ${networkId} monitoring from block height ${reorgSafeStartHeight} to ${currentHeight} (accounting for possible reorgs)`,
       );
       const mempoolTxids = await getMempoolTxids(networkId);
-      const reversibleBlockTxids = [];
+      let reversibleBlockTxids: string[] = [];
       // Process all blocks from last checked to current.
       // Consider possible reorg by start the search IRREVERSIBLE_THRESHOLD
       // blocks before the last checked.
