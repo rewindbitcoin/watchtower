@@ -51,18 +51,18 @@ async function initMonitoring(networkId: string): Promise<{ lastCheckedHeight: n
 /**
  * Check if a transaction exists in a block or mempool
  */
-async function checkTransactionInBlockOrMempool(txid: string, blockTxids: string[], mempoolTxids: string[]): Promise<boolean> {
+async function checkTransactionInBlockOrMempool(txid: string, blockTxids: string[], mempoolTxids: string[]): Promise<string> {
   // Check if transaction is in the block
   if (blockTxids.includes(txid)) {
-    return true;
+    return 'reversible';
   }
   
   // Check if transaction is in mempool
   if (mempoolTxids.includes(txid)) {
-    return true;
+    return 'pending';
   }
   
-  return false;
+  return 'unknown';
 }
 
 /**
@@ -73,10 +73,10 @@ async function sendNotifications(networkId: string) {
   
   // Get all notifications that need to be sent
   const notificationsToSend = await db.all(`
-    SELECT n.pushToken, n.vaultId, vt.txid, vt.block_height
+    SELECT n.pushToken, n.vaultId, vt.txid, vt.status, vt.block_height
     FROM notifications n
     JOIN vault_txids vt ON n.vaultId = vt.vaultId
-    WHERE n.status = 'pending' AND vt.block_height > -1
+    WHERE n.status = 'pending' AND (vt.status = 'reversible' OR vt.status = 'irreversible' OR vt.status = 'pending')
   `);
   
   for (const notification of notificationsToSend) {
@@ -86,16 +86,25 @@ async function sendNotifications(networkId: string) {
         to: notification.pushToken,
         title: "Vault Access Alert!",
         body: `Your vault ${notification.vaultId} is being accessed!`,
-        data: { vaultId: notification.vaultId, txid: notification.txid }
+        data: { 
+          vaultId: notification.vaultId, 
+          txid: notification.txid,
+          status: notification.status
+        }
       });
       
-      // For now, all notifications are treated as irreversible
-      const status = 'notified_irreversible';
+      // Update notification status based on transaction status
+      let notificationStatus;
+      if (notification.status === 'irreversible') {
+        notificationStatus = 'notified_irreversible';
+      } else {
+        notificationStatus = 'notified_reversible';
+      }
       
       // Update notification status
       await db.run(
         "UPDATE notifications SET status = ? WHERE vaultId = ? AND pushToken = ?",
-        [status, notification.vaultId, notification.pushToken]
+        [notificationStatus, notification.vaultId, notification.pushToken]
       );
       
       console.log(`Notification sent for vault ${notification.vaultId} to device ${notification.pushToken} (${status})`);
@@ -122,36 +131,36 @@ async function monitorTransactions(networkId: string) {
     // If this is the first run - use direct transaction status checks
     if (isFirstRun) {
       console.log(`First run for ${networkId}: Checking all pending transactions directly`);
-      // Check all pending transactions directly
-      const pendingTxs = await db.all(`
+      // Check all unknown transactions directly
+      const unknownTxs = await db.all(`
         SELECT vt.vaultId, vt.txid 
         FROM vault_txids vt
         JOIN notifications n ON vt.vaultId = n.vaultId
-        WHERE n.status = 'pending' AND vt.block_height = -1
+        WHERE n.status = 'pending' AND vt.status = 'unknown'
         GROUP BY vt.txid
       `);
       
-      for (const tx of pendingTxs) {
-        const status = await getTxStatus(tx.txid, networkId);
+      for (const tx of unknownTxs) {
+        const txStatus = await getTxStatus(tx.txid, networkId);
         
-        if (status && status.confirmed) {
+        if (txStatus && txStatus.confirmed) {
           // Transaction is confirmed in a block
-          await db.run(
-            "UPDATE vault_txids SET block_height = ? WHERE txid = ?",
-            [status.block_height, tx.txid]
-          );
+          const confirmations = currentHeight - txStatus.block_height + 1;
+          const status = confirmations >= IRREVERSIBLE_THRESHOLD ? 'irreversible' : 'reversible';
           
-          // No need to update vault status as we don't have a vaults table anymore
-          // Notifications will be updated in the sendNotifications function
+          await db.run(
+            "UPDATE vault_txids SET status = ?, block_height = ? WHERE txid = ?",
+            [status, txStatus.block_height, tx.txid]
+          );
         } else if (mempoolTxids.includes(tx.txid)) {
           // Transaction is in mempool
           await db.run(
-            "UPDATE vault_txids SET block_height = -2 WHERE txid = ?",
-            [tx.txid]
+            "UPDATE vault_txids SET status = ?, block_height = NULL WHERE txid = ?",
+            ['pending', tx.txid]
           );
-          
-          // No need to update vault status as we don't have a vaults table anymore
-          // Notifications will be updated in the sendNotifications function
+        } else {
+          // Transaction not found, keep as unknown
+          // No update needed
         }
       }
     } else {
@@ -169,32 +178,51 @@ async function monitorTransactions(networkId: string) {
         // Add to in-memory cache
         checkedBlocks[networkId].add(height);
         
-        // Get all pending transactions
-        const pendingTxs = await db.all(`
-          SELECT vt.vaultId, vt.txid 
+        // Get all transactions that need checking
+        const txsToCheck = await db.all(`
+          SELECT vt.vaultId, vt.txid, vt.status
           FROM vault_txids vt
           JOIN notifications n ON vt.vaultId = n.vaultId
-          WHERE n.status = 'pending' AND (vt.block_height = -1 OR vt.block_height = -2)
+          WHERE n.status = 'pending' AND (vt.status = 'unknown' OR vt.status = 'pending' OR vt.status = 'reversible')
           GROUP BY vt.txid
         `);
         
-        // Check each pending transaction
-        for (const tx of pendingTxs) {
+        // Check each transaction
+        for (const tx of txsToCheck) {
           if (blockTxids.includes(tx.txid)) {
             // Transaction found in this block
-            await db.run(
-              "UPDATE vault_txids SET block_height = ? WHERE txid = ?",
-              [height, tx.txid]
-            );
+            const status = (currentHeight - height + 1) >= IRREVERSIBLE_THRESHOLD ? 'irreversible' : 'reversible';
             
-            // No need to update vault status as we don't have a vaults table anymore
-            // Notifications will be updated in the sendNotifications function
+            await db.run(
+              "UPDATE vault_txids SET status = ?, block_height = ? WHERE txid = ?",
+              [status, height, tx.txid]
+            );
           } else if (mempoolTxids.includes(tx.txid)) {
             // Transaction is in mempool
             await db.run(
-              "UPDATE vault_txids SET block_height = -2 WHERE txid = ?",
-              [tx.txid]
+              "UPDATE vault_txids SET status = ?, block_height = NULL WHERE txid = ?",
+              ['pending', tx.txid]
             );
+          } else if (tx.status === 'unknown') {
+            // For unknown transactions, check status directly
+            const txStatus = await getTxStatus(tx.txid, networkId);
+            
+            if (txStatus && txStatus.confirmed) {
+              const confirmations = currentHeight - txStatus.block_height + 1;
+              const newStatus = confirmations >= IRREVERSIBLE_THRESHOLD ? 'irreversible' : 'reversible';
+              
+              await db.run(
+                "UPDATE vault_txids SET status = ?, block_height = ? WHERE txid = ?",
+                [newStatus, txStatus.block_height, tx.txid]
+              );
+            } else if (txStatus) {
+              // Transaction exists but not confirmed
+              await db.run(
+                "UPDATE vault_txids SET status = ?, block_height = NULL WHERE txid = ?",
+                ['pending', tx.txid]
+              );
+            }
+            // If txStatus is null, keep as unknown
           }
         }
       }

@@ -47,9 +47,9 @@ export function registerRoutes(app: Express) {
           );
           
           if (!existing) {
-            // Insert new transaction to monitor with default block_height of -1 (not mined)
+            // Insert new transaction to monitor with default status of 'unknown'
             await db.run(
-              "INSERT INTO vault_txids (txid, vaultId, block_height) VALUES (?, ?, -1)",
+              "INSERT INTO vault_txids (txid, vaultId, status) VALUES (?, ?, 'unknown')",
               [txid, vaultId]
             );
           } else if (existing.vaultId !== vaultId) {

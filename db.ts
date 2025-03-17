@@ -23,7 +23,8 @@ export async function initDb(dbPath: string, networkId: string) {
     CREATE TABLE IF NOT EXISTS vault_txids (
       txid TEXT PRIMARY KEY,
       vaultId TEXT NOT NULL,
-      block_height INTEGER DEFAULT -1
+      status TEXT DEFAULT 'unknown',
+      block_height INTEGER DEFAULT NULL
     );
     
     CREATE TABLE IF NOT EXISTS network_state (
