@@ -158,11 +158,9 @@ async function monitorTransactions(networkId: string): Promise<void> {
 
         // Get all transactions that need checking
         const txsToCheck = await db.all(`
-          SELECT vt.vaultId, vt.txid, vt.status
-          FROM vault_txids vt
-          JOIN notifications n ON vt.vaultId = n.vaultId
-          WHERE n.status = 'pending' AND (vt.status = 'pending' OR vt.status = 'reversible')
-          GROUP BY vt.txid
+          SELECT txid, status
+          FROM vault_txids
+          WHERE status = 'pending' OR status = 'reversible'
         `);
 
         // Check each transaction
