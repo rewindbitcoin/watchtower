@@ -197,8 +197,12 @@ async function monitorTransactions(networkId: string): Promise<void> {
           FROM vault_txids
           WHERE status = 'reversible'
         `);
+      // Check if transaction is in either scanned blocks OR mempool
       for (const tx of txsToCheck)
-        if (!scannedBlockTxids.includes(tx.txid)) {
+        if (
+          !scannedBlockTxids.includes(tx.txid) &&
+          !mempoolTxids.includes(tx.txid)
+        ) {
           // This reversible transaction cannot be found anymore in the last
           // IRREVERSIBLE_THRESHOLD blocks!
           // This means it was either reorg or purged from the mempool.
