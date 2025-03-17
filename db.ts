@@ -11,6 +11,7 @@ export async function initDb(dbPath: string, networkId: string) {
   });
 
   // Create tables if they do not exist
+  // block_height: -2 for mempool, -1 for not seen
   await db.exec(`
     CREATE TABLE IF NOT EXISTS vaults (
       vaultId TEXT PRIMARY KEY,

@@ -22,7 +22,7 @@ const checkedBlocks: Record<string, Set<number>> = {
  * Initialize the monitoring system
  * @returns An object with lastCheckedHeight and isFirstRun flag
  */
-export async function initMonitoring(networkId: string): Promise<{ lastCheckedHeight: number, isFirstRun: boolean }> {
+async function initMonitoring(networkId: string): Promise<{ lastCheckedHeight: number, isFirstRun: boolean }> {
   const db = getDb(networkId);
   
   // Get the last checked height from the database
@@ -106,7 +106,7 @@ async function sendNotifications(networkId: string) {
 /**
  * Main monitoring function
  */
-export async function monitorTransactions(networkId: string) {
+async function monitorTransactions(networkId: string) {
   const db = getDb(networkId);
   
   try {
