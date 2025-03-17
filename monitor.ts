@@ -82,27 +82,27 @@ async function monitorTransactions(networkId: string): Promise<void> {
     if (!lastCheckedHeight) {
       console.log(`First run for ${networkId}`);
 
-      // Check if there are any vault_txids with status other than 'unknown'
-      const nonUnknownTxs = await db.get(`
+      // Check if there are any vault_txids with status other than 'unchecked'
+      const nonUncheckedTxs = await db.get(`
         SELECT COUNT(*) as count 
         FROM vault_txids 
-        WHERE status != 'unknown'
+        WHERE status != 'unchecked'
       `);
-
-      if (nonUnknownTxs && nonUnknownTxs.count > 0) {
+      
+      if (nonUncheckedTxs && nonUncheckedTxs.count > 0) {
         throw new Error(
-          `First run for ${networkId} but found ${nonUnknownTxs.count} transactions with status other than 'unknown'. Database may be corrupted.`,
+          `First run for ${networkId} but found ${nonUncheckedTxs.count} transactions with status other than 'unchecked'. Database may be corrupted.`,
         );
       }
     }
-    // Check all unknown transactions directly
-    const unknownTxs = await db.all(`
+    // Check all unchecked transactions directly
+    const uncheckedTxs = await db.all(`
         SELECT vaultId, txid 
         FROM vault_txids
-        WHERE status = 'unknown'
+        WHERE status = 'unchecked'
       `);
 
-    for (const tx of unknownTxs) {
+    for (const tx of uncheckedTxs) {
       const txStatus = await getTxStatus(tx.txid, networkId);
 
       if (txStatus) {

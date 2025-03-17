@@ -68,7 +68,7 @@ export function registerRoutes(app: Express) {
             for (const txid of triggerTxIds) {
               // Insert transaction if it doesn't exist yet
               await db.run(
-                "INSERT OR IGNORE INTO vault_txids (txid, vaultId, status) VALUES (?, ?, 'unknown')",
+                "INSERT OR IGNORE INTO vault_txids (txid, vaultId, status) VALUES (?, ?, 'unchecked')",
                 [txid, vaultId],
               );
             }
