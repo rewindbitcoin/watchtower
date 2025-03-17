@@ -39,7 +39,7 @@ export async function initDb(dbPath: string, networkId: string) {
     CREATE TABLE IF NOT EXISTS vault_txids (
       txid TEXT PRIMARY KEY,
       vaultId TEXT NOT NULL,
-      status TEXT DEFAULT 'unchecked' -- 'unchecked', 'unseen', 'mempool', 'reversible', or 'irreversible'
+      status TEXT DEFAULT 'unchecked' -- 'unchecked', 'unseen', 'reversible', or 'irreversible'
     );
     
     CREATE TABLE IF NOT EXISTS network_state (

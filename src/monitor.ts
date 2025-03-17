@@ -188,7 +188,7 @@ async function monitorTransactions(networkId: string): Promise<void> {
           tx.txid,
         ]);
       }
-      await sleep(200); //be nice: 5 per second
+      await sleep(500); //be nice. For vaults with 60 triggerTx ~ 30 secs
     }
     if (uncheckedTxs.length) {
       logger.info(
