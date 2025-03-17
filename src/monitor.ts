@@ -187,6 +187,9 @@ async function monitorTransactions(networkId: string): Promise<void> {
               tx.txid,
             ]);
           } else if (tx.status === "reversible") {
+            //FIXME: the code below is wrong, in fact this should activate
+            //if the txId is not found in ALL the blocls from currentHeight - IRREVERSIBLE_THRESHOLD to the currentHeight
+            
             // This reversible transaction cannot be found anymore in the last
             // IRREVERSIBLE_THRESHOLD blocks!
             // This means it was either reorg or purged from the mempool.
