@@ -45,18 +45,21 @@ const MAX_CACHED_BLOCKS = IRREVERSIBLE_THRESHOLD * 2;
  * Get block transactions with caching to reduce network calls
  * Returns cached transactions if available, otherwise fetches from network
  */
-async function getCachedBlockTxids(blockHash: string, networkId: string): Promise<string[]> {
+async function getCachedBlockTxids(
+  blockHash: string,
+  networkId: string,
+): Promise<string[]> {
   // Check if we have this block's transactions in cache
   if (blockTxidsCache[networkId][blockHash]) {
     return blockTxidsCache[networkId][blockHash];
   }
-  
+
   // Not in cache, fetch from network
   const blockTxids = await getBlockTxids(blockHash, networkId);
-  
+
   // Add to cache
   blockTxidsCache[networkId][blockHash] = blockTxids;
-  
+
   // Prune cache if it gets too large
   const blockHashes = Object.keys(blockTxidsCache[networkId]);
   if (blockHashes.length > MAX_CACHED_BLOCKS) {
@@ -67,7 +70,7 @@ async function getCachedBlockTxids(blockHash: string, networkId: string): Promis
       delete blockTxidsCache[networkId][hash];
     }
   }
-  
+
   return blockTxids;
 }
 
@@ -208,7 +211,7 @@ async function monitorTransactions(networkId: string): Promise<void> {
         height++
       ) {
         const blockHash = await getBlockHashByHeight(height, networkId);
-        
+
         // Get block transactions (from cache if available)
         const blockTxids = await getCachedBlockTxids(blockHash, networkId);
         scannedBlockTxids.push(...blockTxids);
