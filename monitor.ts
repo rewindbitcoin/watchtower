@@ -183,7 +183,10 @@ async function monitorTransactions(networkId: string): Promise<void> {
               tx.txid,
             ]);
           } else {
-            // Transactions that cannot be found anymore (reorg or missing from mempool)
+            // This transaction cannot be found anymore!
+            // This means either reorg or purged from the mempool.
+            //TODO: here reset the notifications for this vaultId to
+            //pending
             await db.run("UPDATE vault_txids SET status = ? WHERE txid = ?", [
               "unseen",
               tx.txid,
