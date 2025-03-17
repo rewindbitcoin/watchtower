@@ -60,7 +60,13 @@ npx ts-node src/index.ts --db-folder=./db --disable-bitcoin --disable-regtest
 Command line options:
 
 ```bash
-npx ts-node src/index.ts --db-folder=./db --port=3000 --disable-testnet
+npx ts-node src/index.ts --db-folder=./db --port=3000 --disable-testnet --disable-tape
+```
+
+To enable regtest with a custom Esplora API URL:
+
+```bash
+npx ts-node src/index.ts --db-folder=./db --enable-regtest=http://localhost:3002
 ```
 
 Display help information:
@@ -72,11 +78,13 @@ npx ts-node src/index.ts --help
 If no port is specified, a random available port will be used and displayed in
 the console.
 
-By default, the watchtower monitors all networks:
+By default, the watchtower monitors these networks:
 
 - `bitcoin`
 - `testnet`
-- `regtest`
+- `tape`
+
+The `regtest` network is disabled by default and must be explicitly enabled with a valid Esplora API URL.
 
 ---
 
