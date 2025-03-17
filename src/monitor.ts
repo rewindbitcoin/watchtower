@@ -77,7 +77,7 @@ async function monitorTransactions(networkId: string): Promise<void> {
       "SELECT last_checked_height FROM network_state WHERE id = 1",
     );
 
-    const lastCheckedHeight = state && state.last_checked_height || 0;
+    const lastCheckedHeight = state?.last_checked_height || 0;
     const currentHeight = parseInt(await getLatestBlockHeight(networkId), 10);
 
     if (!lastCheckedHeight) {
