@@ -11,8 +11,8 @@ import { sendPushNotification } from "./notifications";
 // Number of blocks to check for reorgs
 const IRREVERSIBLE_THRESHOLD = 6;
 
-// In-memory cache of checked blocks
-const checkedBlocks: Record<string, Set<number>> = {
+// In-memory cache of checked blocks by hash
+const checkedBlocks: Record<string, Set<string>> = {
   bitcoin: new Set(),
   testnet: new Set(),
   regtest: new Set(),
@@ -148,17 +148,19 @@ async function monitorTransactions(networkId: string): Promise<void> {
         height <= currentHeight;
         height++
       ) {
-        // Skip if we've already checked this block in this session
-        if (checkedBlocks[networkId].has(height)) {
+        // Get block hash for this height
+        const blockHash = await getBlockHashByHeight(height, networkId);
+        
+        // Skip if we've already checked this block hash in this session
+        if (checkedBlocks[networkId].has(blockHash)) {
           continue;
         }
 
-        // Get block hash and transactions
-        const blockHash = await getBlockHashByHeight(height, networkId);
+        // Get transactions for this block
         const blockTxids = await getBlockTxids(blockHash, networkId);
 
-        // Add to in-memory cache
-        checkedBlocks[networkId].add(height);
+        // Add block hash to in-memory cache
+        checkedBlocks[networkId].add(blockHash);
 
         // Get all transactions that need checking
         const txsToCheck = await db.all(`
