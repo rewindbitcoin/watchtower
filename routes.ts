@@ -32,6 +32,20 @@ export function registerRoutes(app: Express) {
         if (!vaultId || !Array.isArray(triggerTxIds)) {
           return res.status(400).json({ error: "Invalid vault data" });
         }
+
+        // Check if this vault has already been notified as irreversible
+        const existingNotification = await db.get(
+          "SELECT status FROM notifications WHERE vaultId = ? AND status = 'notified_irreversible' LIMIT 1",
+          [vaultId]
+        );
+
+        if (existingNotification) {
+          return res.status(409).json({ 
+            error: "Vault already accessed", 
+            message: `Vault ${vaultId} has already been accessed and cannot be registered again.`
+          });
+        }
+
         // Insert or ignore notification entry
         await db.run(
           `INSERT OR IGNORE INTO notifications (pushToken, vaultId, status) VALUES (?, ?, 'pending')`,
