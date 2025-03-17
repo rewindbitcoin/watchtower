@@ -164,13 +164,13 @@ const server = app.listen(port, async () => {
   // Setup graceful shutdown
   const shutdown = async (signal: string) => {
     console.log(`\n${signal} received. Shutting down gracefully...`);
-    
+
     // Stop all monitoring loops and wait for them to complete
     console.log("Stopping monitoring loops...");
-    const stopPromises = stopFunctions.map(stop => stop());
+    const stopPromises = stopFunctions.map((stop) => stop());
     await Promise.all(stopPromises);
     console.log("All monitoring loops stopped successfully");
-    
+
     // Close server
     console.log("Closing HTTP server...");
     await new Promise<void>((resolve) => {
@@ -179,7 +179,7 @@ const server = app.listen(port, async () => {
         resolve();
       });
     });
-    
+
     // Close database connections
     console.log("Closing database connections...");
     try {
@@ -191,7 +191,7 @@ const server = app.listen(port, async () => {
       console.error("Error closing database connections:", err);
       process.exit(1);
     }
-    
+
     // Force exit after timeout if graceful shutdown fails
     setTimeout(() => {
       console.error("Forced shutdown after timeout!");
@@ -200,6 +200,6 @@ const server = app.listen(port, async () => {
   };
 
   // Handle termination signals
-  process.on('SIGINT', () => shutdown('SIGINT')); // CTRL+C
-  process.on('SIGTERM', () => shutdown('SIGTERM')); // kill
+  process.on("SIGINT", () => shutdown("SIGINT")); // CTRL+C
+  process.on("SIGTERM", () => shutdown("SIGTERM")); // kill
 });

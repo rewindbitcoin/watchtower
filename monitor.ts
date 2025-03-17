@@ -268,14 +268,18 @@ export function startMonitoring(networkId: string, intervalMs = 60000) {
   // Return a function that can be used to stop the monitoring
   return (): Promise<void> => {
     running = false;
-    console.log(`Stopping monitoring for ${networkId}. Waiting for current cycle to complete...`);
-    
+    console.log(
+      `Stopping monitoring for ${networkId}. Waiting for current cycle to complete...`,
+    );
+
     // Return a promise that resolves when the current cycle completes
     return new Promise<void>((resolve) => {
       if (currentCycle) {
         // If there's a cycle running, wait for it to complete
         currentCycle.finally(() => {
-          console.log(`Current cycle for ${networkId} completed after stop request`);
+          console.log(
+            `Current cycle for ${networkId} completed after stop request`,
+          );
           resolve();
         });
       } else {
