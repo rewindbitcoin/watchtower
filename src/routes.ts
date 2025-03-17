@@ -1,5 +1,9 @@
 import { Express, Request, Response } from "express";
 import { getDb } from "./db";
+import { createLogger } from "./logger";
+
+// Create logger for this module
+const logger = createLogger("Routes");
 
 export function registerRoutes(app: Express) {
   /**
@@ -73,7 +77,7 @@ export function registerRoutes(app: Express) {
               );
             }
           } else {
-            console.log(
+            logger.info(
               `Notification for vault ${vaultId} and push token ${pushToken} already exists, skipping txid processing`,
             );
           }
@@ -81,7 +85,7 @@ export function registerRoutes(app: Express) {
         res.sendStatus(200);
         return;
       } catch (err: any) {
-        console.error("Error in /register:", err);
+        logger.error("Error in /register:", err);
         res.status(500).json({ error: "Internal server error" });
         return;
       }

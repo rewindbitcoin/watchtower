@@ -1,3 +1,8 @@
+import { createLogger } from "./logger";
+
+// Create logger for this module
+const logger = createLogger("Notifications");
+
 export interface NotificationPayload {
   to: string;
   title: string;
@@ -20,15 +25,15 @@ export async function sendPushNotification(
     });
 
     if (!response.ok) {
-      console.error(`Failed to send push notification: ${response.statusText}`);
+      logger.error(`Failed to send push notification: ${response.statusText}`);
       return false;
     }
 
     const result = await response.json();
-    console.log("Push notification sent:", result);
+    logger.info("Push notification sent:", result);
     return true;
   } catch (error) {
-    console.error("Error sending push notification:", error);
+    logger.error("Error sending push notification:", error);
     return false;
   }
 }
