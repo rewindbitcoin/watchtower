@@ -29,7 +29,7 @@ async function sendNotifications(networkId: string) {
     SELECT n.pushToken, n.vaultId, vt.txid, vt.status
     FROM notifications n
     JOIN vault_txids vt ON n.vaultId = vt.vaultId
-    WHERE n.status = 'pending' AND (vt.status = 'reversible' OR vt.status = 'irreversible' OR vt.status = 'pending')
+    WHERE n.status = 'pending' AND (vt.status = 'reversible' OR vt.status = 'irreversible' OR vt.status = 'unseen')
   `);
 
   for (const notification of notificationsToSend) {
@@ -131,7 +131,7 @@ async function monitorTransactions(networkId: string): Promise<void> {
       } else {
         //not seen yet
         await db.run("UPDATE vault_txids SET status = ? WHERE txid = ?", [
-          "pending",
+          "unseen",
           tx.txid,
         ]);
       }
@@ -160,7 +160,7 @@ async function monitorTransactions(networkId: string): Promise<void> {
         const txsToCheck = await db.all(`
           SELECT txid, status
           FROM vault_txids
-          WHERE status = 'pending' OR status = 'reversible'
+          WHERE status = 'unseen' OR status = 'reversible'
         `);
 
         // Check each transaction
@@ -179,7 +179,7 @@ async function monitorTransactions(networkId: string): Promise<void> {
           } else if (mempoolTxids.includes(tx.txid)) {
             // Transaction is in mempool
             await db.run("UPDATE vault_txids SET status = ? WHERE txid = ?", [
-              "pending",
+              "unseen",
               tx.txid,
             ]);
           } else if (tx.status === "unknown") {
@@ -200,7 +200,7 @@ async function monitorTransactions(networkId: string): Promise<void> {
             } else if (txStatus) {
               // Transaction exists but not confirmed
               await db.run("UPDATE vault_txids SET status = ? WHERE txid = ?", [
-                "pending",
+                "unseen",
                 tx.txid,
               ]);
             }
