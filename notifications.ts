@@ -18,17 +18,17 @@ export async function sendPushNotification(
       },
       body: JSON.stringify(payload),
     });
-    
+
     if (!response.ok) {
       console.error(`Failed to send push notification: ${response.statusText}`);
       return false;
     }
-    
+
     const result = await response.json();
-    console.log('Push notification sent:', result);
+    console.log("Push notification sent:", result);
     return true;
   } catch (error) {
-    console.error('Error sending push notification:', error);
+    console.error("Error sending push notification:", error);
     return false;
   }
 }

@@ -19,12 +19,12 @@ Required:
   --db-folder <path>   Specify the folder path for database storage
 
 Options:
-  --port <number>      Specify the port number (random if not specified)
-  --disable-bitcoin    Disable Bitcoin mainnet monitoring
-  --disable-testnet    Disable Bitcoin testnet monitoring
-  --disable-tape       Disable Tape network monitoring
-  --enable-regtest <url> Enable Bitcoin regtest with custom Esplora API URL
-  --help, -h           Show this help message
+  --port <number>          Specify the port number (random if not specified)
+  --disable-bitcoin        Disable Bitcoin mainnet monitoring
+  --disable-testnet        Disable Bitcoin testnet monitoring
+  --disable-tape           Disable Tape network monitoring
+  --enable-regtest <url>   Enable Bitcoin regtest with custom Esplora API URL
+  --help, -h               Show this help message
 
 By default, the watchtower runs for bitcoin, testnet, and tape networks.
 Regtest is disabled by default and must be explicitly enabled with a valid Esplora API URL.
@@ -38,19 +38,22 @@ const dbFolderIndex = process.argv.indexOf("--db-folder");
 const enableRegtestIndex = process.argv.indexOf("--enable-regtest");
 
 // Get port value (next argument after --port)
-const port = portIndex !== -1 && portIndex < process.argv.length - 1 
-  ? parseInt(process.argv[portIndex + 1], 10) 
-  : 0; // Use 0 for random port assignment
+const port =
+  portIndex !== -1 && portIndex < process.argv.length - 1
+    ? parseInt(process.argv[portIndex + 1], 10)
+    : 0; // Use 0 for random port assignment
 
 // Get database folder (next argument after --db-folder)
-const dbFolder = dbFolderIndex !== -1 && dbFolderIndex < process.argv.length - 1 
-  ? process.argv[dbFolderIndex + 1] 
-  : null;
+const dbFolder =
+  dbFolderIndex !== -1 && dbFolderIndex < process.argv.length - 1
+    ? process.argv[dbFolderIndex + 1]
+    : null;
 
 // Get regtest API URL (next argument after --enable-regtest)
-const regtestApiUrl = enableRegtestIndex !== -1 && enableRegtestIndex < process.argv.length - 1 
-  ? process.argv[enableRegtestIndex + 1] 
-  : null;
+const regtestApiUrl =
+  enableRegtestIndex !== -1 && enableRegtestIndex < process.argv.length - 1
+    ? process.argv[enableRegtestIndex + 1]
+    : null;
 
 // Check which networks to run
 const runBitcoin = !process.argv.includes("--disable-bitcoin");
@@ -148,7 +151,9 @@ const server = app.listen(port, async () => {
       console.error("Failed to initialize Regtest DB:", err);
       process.exit(1);
     });
-    console.log(`Bitcoin regtest monitoring enabled with API: ${regtestApiUrl}`);
+    console.log(
+      `Bitcoin regtest monitoring enabled with API: ${regtestApiUrl}`,
+    );
     // Start monitoring for regtest
     startMonitoring("regtest", 30000); // Faster polling for regtest
   }

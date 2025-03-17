@@ -1,13 +1,16 @@
-import sqlite3 from 'sqlite3';
-import { open, Database } from 'sqlite';
+import sqlite3 from "sqlite3";
+import { open, Database } from "sqlite";
 
 // Map to store database connections for each network
-const dbConnections: Record<string, Database<sqlite3.Database, sqlite3.Statement>> = {};
+const dbConnections: Record<
+  string,
+  Database<sqlite3.Database, sqlite3.Statement>
+> = {};
 
 export async function initDb(dbPath: string, networkId: string) {
   const db = await open({
     filename: dbPath,
-    driver: sqlite3.Database
+    driver: sqlite3.Database,
   });
 
   // Create tables if they do not exist
@@ -33,7 +36,7 @@ export async function initDb(dbPath: string, networkId: string) {
 
   // Store the connection for this network
   dbConnections[networkId] = db;
-  
+
   return db;
 }
 
@@ -45,7 +48,5 @@ export function getDb(networkId: string) {
 }
 
 export function closeAllConnections() {
-  return Promise.all(
-    Object.values(dbConnections).map(db => db.close())
-  );
+  return Promise.all(Object.values(dbConnections).map((db) => db.close()));
 }

@@ -89,7 +89,7 @@ async function monitorTransactions(networkId: string): Promise<void> {
         FROM vault_txids 
         WHERE status != 'unchecked'
       `);
-      
+
       if (nonUncheckedTxs && nonUncheckedTxs.count > 0) {
         throw new Error(
           `First run for ${networkId} but found ${nonUncheckedTxs.count} transactions with status other than 'unchecked'. Database may be corrupted.`,
