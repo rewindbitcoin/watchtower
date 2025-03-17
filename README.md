@@ -96,7 +96,7 @@ The Watchtower API uses **SQLite** with the following structure:
 |--------|------|-------------|
 | `txid` | TEXT | Primary Key - Transaction ID to monitor |
 | `vaultId` | TEXT | Associated vault ID |
-| `block_height` | INTEGER | Block height where transaction was mined (-1 = not seen, -2 = in mempool) |
+| `status` | TEXT | Status: 'unknown', 'pending', 'reversible', or 'irreversible' |
 
 **Network State Table:**
 | Column | Type | Description |

@@ -73,7 +73,7 @@ async function sendNotifications(networkId: string) {
   
   // Get all notifications that need to be sent
   const notificationsToSend = await db.all(`
-    SELECT n.pushToken, n.vaultId, vt.txid, vt.status, vt.block_height
+    SELECT n.pushToken, n.vaultId, vt.txid, vt.status
     FROM notifications n
     JOIN vault_txids vt ON n.vaultId = vt.vaultId
     WHERE n.status = 'pending' AND (vt.status = 'reversible' OR vt.status = 'irreversible' OR vt.status = 'pending')
@@ -149,13 +149,13 @@ async function monitorTransactions(networkId: string) {
           const status = confirmations >= IRREVERSIBLE_THRESHOLD ? 'irreversible' : 'reversible';
           
           await db.run(
-            "UPDATE vault_txids SET status = ?, block_height = ? WHERE txid = ?",
-            [status, txStatus.block_height, tx.txid]
+            "UPDATE vault_txids SET status = ? WHERE txid = ?",
+            [status, tx.txid]
           );
         } else if (mempoolTxids.includes(tx.txid)) {
           // Transaction is in mempool
           await db.run(
-            "UPDATE vault_txids SET status = ?, block_height = NULL WHERE txid = ?",
+            "UPDATE vault_txids SET status = ? WHERE txid = ?",
             ['pending', tx.txid]
           );
         } else {
@@ -194,13 +194,13 @@ async function monitorTransactions(networkId: string) {
             const status = (currentHeight - height + 1) >= IRREVERSIBLE_THRESHOLD ? 'irreversible' : 'reversible';
             
             await db.run(
-              "UPDATE vault_txids SET status = ?, block_height = ? WHERE txid = ?",
-              [status, height, tx.txid]
+              "UPDATE vault_txids SET status = ? WHERE txid = ?",
+              [status, tx.txid]
             );
           } else if (mempoolTxids.includes(tx.txid)) {
             // Transaction is in mempool
             await db.run(
-              "UPDATE vault_txids SET status = ?, block_height = NULL WHERE txid = ?",
+              "UPDATE vault_txids SET status = ? WHERE txid = ?",
               ['pending', tx.txid]
             );
           } else if (tx.status === 'unknown') {
@@ -212,13 +212,13 @@ async function monitorTransactions(networkId: string) {
               const newStatus = confirmations >= IRREVERSIBLE_THRESHOLD ? 'irreversible' : 'reversible';
               
               await db.run(
-                "UPDATE vault_txids SET status = ?, block_height = ? WHERE txid = ?",
-                [newStatus, txStatus.block_height, tx.txid]
+                "UPDATE vault_txids SET status = ? WHERE txid = ?",
+                [newStatus, tx.txid]
               );
             } else if (txStatus) {
               // Transaction exists but not confirmed
               await db.run(
-                "UPDATE vault_txids SET status = ?, block_height = NULL WHERE txid = ?",
+                "UPDATE vault_txids SET status = ? WHERE txid = ?",
                 ['pending', tx.txid]
               );
             }
