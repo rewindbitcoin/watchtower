@@ -114,27 +114,27 @@ async function monitorTransactions(networkId: string): Promise<void> {
     for (const tx of unknownTxs) {
       const txStatus = await getTxStatus(tx.txid, networkId);
 
-      if (txStatus && txStatus.confirmed) {
+      if (txStatus) {
         // Transaction is confirmed in a block
-        const confirmations = currentHeight - txStatus.block_height + 1;
+        const confirmations = txStatus.block_height
+          ? currentHeight - txStatus.block_height + 1
+          : 0;
         const status =
           confirmations >= IRREVERSIBLE_THRESHOLD
             ? "irreversible"
             : "reversible";
 
+        //mempool or few blocks in:
         await db.run("UPDATE vault_txids SET status = ? WHERE txid = ?", [
           status,
           tx.txid,
         ]);
-      } else if (mempoolTxids.includes(tx.txid)) {
-        // Transaction is in mempool
+      } else {
+        //not seen yet
         await db.run("UPDATE vault_txids SET status = ? WHERE txid = ?", [
           "pending",
           tx.txid,
         ]);
-      } else {
-        // Transaction not found, keep as unknown
-        // No update needed
       }
     }
 
