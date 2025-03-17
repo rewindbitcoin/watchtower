@@ -79,12 +79,6 @@ async function monitorTransactions(networkId: string): Promise<void> {
 
     const lastCheckedHeight = state?.last_checked_height || 0;
     const currentHeight = parseInt(await getLatestBlockHeight(networkId), 10);
-    console.warn(`TRACE monitor of ${networkId}`, {
-      state,
-      networkId,
-      lastCheckedHeight,
-      currentHeight,
-    });
 
     if (!lastCheckedHeight) {
       console.log(`First run for ${networkId}`);
@@ -224,20 +218,6 @@ async function monitorTransactions(networkId: string): Promise<void> {
     // Send notifications for triggered vaults
     await sendNotifications(networkId);
 
-    console.warn(`TRACE update network_state on ${networkId}`, {
-      networkId,
-      currentHeight,
-    });
-    
-    // Create table if it doesn't exist and insert/update the last checked height
-    await db.exec(`
-      CREATE TABLE IF NOT EXISTS network_state (
-        id INTEGER PRIMARY KEY,
-        last_checked_height INTEGER
-      )
-    `);
-    
-    // Use INSERT OR REPLACE to handle both first-time and subsequent updates
     await db.run(
       "INSERT OR REPLACE INTO network_state (id, last_checked_height) VALUES (1, ?)",
       [currentHeight],
