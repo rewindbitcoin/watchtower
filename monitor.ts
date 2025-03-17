@@ -32,7 +32,7 @@ async function initMonitoring(networkId: string): Promise<{ lastCheckedHeight: n
   if (!state || state.last_checked_height === null) {
     // Get current height to initialize
     const currentHeight = parseInt(await getLatestBlockHeight(networkId), 10);
-    const startHeight = Math.max(0, currentHeight - IRREVERSIBLE_THRESHOLD);
+    const startHeight = Math.max(0, currentHeight);
     
     // Create state record with initial height
     await db.run(
