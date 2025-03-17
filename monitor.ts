@@ -68,9 +68,8 @@ async function checkTransactionInBlockOrMempool(txid: string, blockTxids: string
 /**
  * Send notifications for triggered vaults
  */
-async function sendNotifications(networkId: string, currentHeight: number) {
+async function sendNotifications(networkId: string) {
   const db = getDb(networkId);
-  const irreversibleHeight = currentHeight - IRREVERSIBLE_THRESHOLD;
   
   // Get all notifications that need to be sent
   const notificationsToSend = await db.all(`
@@ -90,10 +89,8 @@ async function sendNotifications(networkId: string, currentHeight: number) {
         data: { vaultId: notification.vaultId, txid: notification.txid }
       });
       
-      // Determine if the transaction is in an irreversible block
-      const status = notification.block_height <= irreversibleHeight 
-        ? 'notified_irreversible' 
-        : 'notified_reversible';
+      // For now, all notifications are treated as irreversible
+      const status = 'notified_irreversible';
       
       // Update notification status
       await db.run(
@@ -203,70 +200,7 @@ async function monitorTransactions(networkId: string) {
       }
     }
     
-    // Also check for reorgs by rechecking the last IRREVERSIBLE_THRESHOLD blocks
-    const reorgStartHeight = Math.max(0, currentHeight - IRREVERSIBLE_THRESHOLD);
-    
-    // Only recheck if we've already processed past this point
-    if (lastCheckedHeight >= reorgStartHeight) {
-      // Get transactions that were supposedly mined in blocks we're rechecking
-      const txsToRecheck = await db.all(`
-        SELECT vt.vaultId, vt.txid, vt.block_height
-        FROM vault_txids vt
-        WHERE vt.block_height >= ? AND vt.block_height <= ?
-      `, [reorgStartHeight, currentHeight]);
-      
-      // Check if these transactions are still in their blocks
-      for (const tx of txsToRecheck) {
-        const blockHash = await getBlockHashByHeight(tx.block_height, networkId);
-        const blockTxids = await getBlockTxids(blockHash, networkId);
-        
-        if (!blockTxids.includes(tx.txid)) {
-          // Transaction is no longer in the block it was in - possible reorg
-          console.log(`Possible reorg detected: ${tx.txid} no longer in block ${tx.block_height}`);
-          
-          // Check if it's in the mempool
-          if (mempoolTxids.includes(tx.txid)) {
-            await db.run(
-              "UPDATE vault_txids SET block_height = -2 WHERE txid = ? AND vaultId = ?",
-              [tx.txid, tx.vaultId]
-            );
-          } else {
-            // Check if it's in another block
-            let found = false;
-            for (let height = reorgStartHeight; height <= currentHeight; height++) {
-              if (height === tx.block_height) continue; // Skip the original block
-              
-              const otherBlockHash = await getBlockHashByHeight(height, networkId);
-              const otherBlockTxids = await getBlockTxids(otherBlockHash, networkId);
-              
-              if (otherBlockTxids.includes(tx.txid)) {
-                // Found in another block
-                await db.run(
-                  "UPDATE vault_txids SET block_height = ? WHERE txid = ?",
-                  [height, tx.txid]
-                );
-                found = true;
-                break;
-              }
-            }
-            
-            if (!found) {
-              // Not found in any block or mempool - reset to pending
-              await db.run(
-                "UPDATE vault_txids SET block_height = -1 WHERE txid = ?",
-                [tx.txid]
-              );
-              
-              // Reset notifications to pending
-              await db.run(
-                "UPDATE notifications SET status = 'pending' WHERE vaultId = ?",
-                [tx.vaultId]
-              );
-            }
-          }
-        }
-      }
-    }
+    // Reorg checking removed for now - will be implemented later
     
     // Update the last checked height
     await db.run(
@@ -275,7 +209,7 @@ async function monitorTransactions(networkId: string) {
     );
     
     // Send notifications for triggered vaults
-    await sendNotifications(networkId, currentHeight);
+    await sendNotifications(networkId);
     
     console.log(`${networkId} monitoring completed. Checked blocks up to height ${currentHeight}`);
   } catch (error) {
