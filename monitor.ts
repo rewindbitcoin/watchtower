@@ -90,7 +90,22 @@ async function monitorTransactions(networkId: string): Promise<void> {
 
     if (!lastCheckedHeight) {
       console.log(`First run for ${networkId}`);
-      //TODO: make sure all the vault_txids.status are unknown or throw
+      
+      // Check if there are any vault_txids with status other than 'unknown'
+      const nonUnknownTxs = await db.get(`
+        SELECT COUNT(*) as count 
+        FROM vault_txids 
+        WHERE status != 'unknown'
+      `);
+      
+      if (nonUnknownTxs && nonUnknownTxs.count > 0) {
+        throw new Error(`First run for ${networkId} but found ${nonUnknownTxs.count} transactions with status other than 'unknown'. Database may be corrupted.`);
+      }
+      
+      // Create initial network state record if it doesn't exist
+      await db.run(
+        "INSERT OR IGNORE INTO network_state (id, last_checked_height) VALUES (1, NULL)"
+      );
     }
     // Check all unknown transactions directly
     const unknownTxs = await db.all(`
