@@ -9,7 +9,7 @@ import {
 import { sendPushNotification } from "./notifications";
 
 // Number of blocks to check for reorgs
-const IRREVERSIBLE_THRESHOLD = 6;
+const IRREVERSIBLE_THRESHOLD = 4;
 
 // In-memory cache of checked blocks by hash
 const checkedBlocks: Record<string, Set<string>> = {
@@ -204,7 +204,7 @@ async function monitorTransactions(networkId: string): Promise<void> {
           !mempoolTxids.includes(tx.txid)
         ) {
           // This reversible transaction cannot be found anymore in the last
-          // IRREVERSIBLE_THRESHOLD blocks!
+          // IRREVERSIBLE_THRESHOLD blocks or mempool!
           // This means it was either reorg or purged from the mempool.
 
           // Reset the transaction status
