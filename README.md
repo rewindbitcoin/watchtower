@@ -84,18 +84,12 @@ By default, the watchtower monitors all networks:
 
 The Watchtower API uses **SQLite** with the following structure:
 
-**Vault Table:**
-| Column | Type | Description |
-|----------|------|-------------|
-| `vaultId` | TEXT | Primary Key - Identifier for the vault |
-| `pending` | BOOLEAN | Whether the vault is still pending (TRUE) or has been triggered (FALSE) |
-
 **Notifications Table:**
 | Column | Type | Description |
 |----------|------|-------------|
 | `pushToken` | TEXT | Device push notification token |
 | `vaultId` | TEXT | Associated vault ID |
-| `notified` | BOOLEAN | Whether a notification has been sent (TRUE) or not (FALSE) |
+| `status` | TEXT | Status: 'pending', 'notified_reversible', or 'notified_irreversible' |
 
 **Vault Transactions Table:**
 | Column | Type | Description |
@@ -157,9 +151,8 @@ The Watchtower uses an efficient monitoring strategy to minimize API calls:
 2. **For each monitoring cycle:**
    - Get all new blocks since the last checked height
    - Check if any pending transactions appear in these blocks
-   - Set vault's pending status to FALSE when transactions are found
-   - Send notifications to all devices for non-pending vaults
-   - Mark notifications as sent
+   - Send notifications to all devices for found transactions
+   - Mark notifications as 'notified_reversible' or 'notified_irreversible'
    - Update the last checked height
 
 3. **Reorg handling:** Recheck the last 6 blocks (IRREVERSIBLE_THRESHOLD) on each

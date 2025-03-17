@@ -32,15 +32,9 @@ export function registerRoutes(app: Express) {
         if (!vaultId || !Array.isArray(triggerTxIds)) {
           return res.status(400).json({ error: "Invalid vault data" });
         }
-        // Insert or ignore vault (will be ignored if already exists)
-        await db.run(
-          `INSERT OR IGNORE INTO vaults (vaultId, pending) VALUES (?, TRUE)`,
-          [vaultId]
-        );
-        
         // Insert or ignore notification entry
         await db.run(
-          `INSERT OR IGNORE INTO notifications (pushToken, vaultId, notified) VALUES (?, ?, FALSE)`,
+          `INSERT OR IGNORE INTO notifications (pushToken, vaultId, status) VALUES (?, ?, 'pending')`,
           [pushToken, vaultId]
         );
         

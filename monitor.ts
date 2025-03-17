@@ -68,16 +68,16 @@ async function checkTransactionInBlockOrMempool(txid: string, blockTxids: string
 /**
  * Send notifications for triggered vaults
  */
-async function sendNotifications(networkId: string) {
+async function sendNotifications(networkId: string, currentHeight: number) {
   const db = getDb(networkId);
+  const irreversibleHeight = currentHeight - IRREVERSIBLE_THRESHOLD;
   
-  // Get all vaults that are not pending and have notifications that haven't been sent
+  // Get all notifications that need to be sent
   const notificationsToSend = await db.all(`
-    SELECT n.pushToken, n.vaultId, vt.txid
+    SELECT n.pushToken, n.vaultId, vt.txid, vt.block_height
     FROM notifications n
-    JOIN vaults v ON n.vaultId = v.vaultId
-    JOIN vault_txids vt ON v.vaultId = vt.vaultId
-    WHERE v.pending = FALSE AND n.notified = FALSE
+    JOIN vault_txids vt ON n.vaultId = vt.vaultId
+    WHERE n.status = 'pending' AND vt.block_height > -1
   `);
   
   for (const notification of notificationsToSend) {
@@ -90,13 +90,18 @@ async function sendNotifications(networkId: string) {
         data: { vaultId: notification.vaultId, txid: notification.txid }
       });
       
-      // Update notification status to sent
+      // Determine if the transaction is in an irreversible block
+      const status = notification.block_height <= irreversibleHeight 
+        ? 'notified_irreversible' 
+        : 'notified_reversible';
+      
+      // Update notification status
       await db.run(
-        "UPDATE notifications SET notified = TRUE WHERE vaultId = ? AND pushToken = ?",
-        [notification.vaultId, notification.pushToken]
+        "UPDATE notifications SET status = ? WHERE vaultId = ? AND pushToken = ?",
+        [status, notification.vaultId, notification.pushToken]
       );
       
-      console.log(`Notification sent for vault ${notification.vaultId} to device ${notification.pushToken}`);
+      console.log(`Notification sent for vault ${notification.vaultId} to device ${notification.pushToken} (${status})`);
     } catch (error) {
       console.error(`Error sending notification for vault ${notification.vaultId}:`, error);
     }
@@ -124,8 +129,9 @@ async function monitorTransactions(networkId: string) {
       const pendingTxs = await db.all(`
         SELECT vt.vaultId, vt.txid 
         FROM vault_txids vt
-        JOIN vaults v ON vt.vaultId = v.vaultId
-        WHERE v.pending = TRUE AND vt.block_height = -1
+        JOIN notifications n ON vt.vaultId = n.vaultId
+        WHERE n.status = 'pending' AND vt.block_height = -1
+        GROUP BY vt.txid
       `);
       
       for (const tx of pendingTxs) {
@@ -138,11 +144,8 @@ async function monitorTransactions(networkId: string) {
             [status.block_height, tx.txid]
           );
           
-          // Update vault status to not pending
-          await db.run(
-            "UPDATE vaults SET pending = FALSE WHERE vaultId = ?",
-            [tx.vaultId]
-          );
+          // No need to update vault status as we don't have a vaults table anymore
+          // Notifications will be updated in the sendNotifications function
         } else if (mempoolTxids.includes(tx.txid)) {
           // Transaction is in mempool
           await db.run(
@@ -150,11 +153,8 @@ async function monitorTransactions(networkId: string) {
             [tx.txid]
           );
           
-          // Update vault status to not pending
-          await db.run(
-            "UPDATE vaults SET pending = FALSE WHERE vaultId = ?",
-            [tx.vaultId]
-          );
+          // No need to update vault status as we don't have a vaults table anymore
+          // Notifications will be updated in the sendNotifications function
         }
       }
     } else {
@@ -176,8 +176,9 @@ async function monitorTransactions(networkId: string) {
         const pendingTxs = await db.all(`
           SELECT vt.vaultId, vt.txid 
           FROM vault_txids vt
-          JOIN vaults v ON vt.vaultId = v.vaultId
-          WHERE v.pending = TRUE AND (vt.block_height = -1 OR vt.block_height = -2)
+          JOIN notifications n ON vt.vaultId = n.vaultId
+          WHERE n.status = 'pending' AND (vt.block_height = -1 OR vt.block_height = -2)
+          GROUP BY vt.txid
         `);
         
         // Check each pending transaction
@@ -189,11 +190,8 @@ async function monitorTransactions(networkId: string) {
               [height, tx.txid]
             );
             
-            // Update vault status to not pending
-            await db.run(
-              "UPDATE vaults SET pending = FALSE WHERE vaultId = ?",
-              [tx.vaultId]
-            );
+            // No need to update vault status as we don't have a vaults table anymore
+            // Notifications will be updated in the sendNotifications function
           } else if (mempoolTxids.includes(tx.txid)) {
             // Transaction is in mempool
             await db.run(
@@ -259,15 +257,9 @@ async function monitorTransactions(networkId: string) {
                 [tx.txid]
               );
               
-              // Reset vault to pending
+              // Reset notifications to pending
               await db.run(
-                "UPDATE vaults SET pending = TRUE WHERE vaultId = ?",
-                [tx.vaultId]
-              );
-              
-              // Reset notifications to not sent
-              await db.run(
-                "UPDATE notifications SET notified = FALSE WHERE vaultId = ?",
+                "UPDATE notifications SET status = 'pending' WHERE vaultId = ?",
                 [tx.vaultId]
               );
             }
@@ -283,7 +275,7 @@ async function monitorTransactions(networkId: string) {
     );
     
     // Send notifications for triggered vaults
-    await sendNotifications(networkId);
+    await sendNotifications(networkId, currentHeight);
     
     console.log(`${networkId} monitoring completed. Checked blocks up to height ${currentHeight}`);
   } catch (error) {
