@@ -87,7 +87,7 @@ async function sendNotifications(networkId: string) {
 /**
  * Main monitoring function
  */
-async function monitorTransactions(networkId: string) {
+async function monitorTransactions(networkId: string): Promise<void> {
   const db = getDb(networkId);
   
   try {
@@ -232,14 +232,41 @@ async function monitorTransactions(networkId: string) {
 }
 
 /**
+ * Sleep function to wait between monitoring cycles
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
  * Set up periodic monitoring
  */
 export function startMonitoring(networkId: string, intervalMs = 60000) {
   console.log(`Starting transaction monitoring for ${networkId} network`);
   
-  // Run immediately on start - initialization happens inside monitorTransactions
-  monitorTransactions(networkId);
+  // Flag to allow stopping the monitoring loop
+  let running = true;
   
-  // Then run periodically
-  return setInterval(() => monitorTransactions(networkId), intervalMs);
+  // Start the monitoring loop
+  (async () => {
+    while (running) {
+      try {
+        // Run the monitoring cycle
+        console.log(`Starting monitoring cycle for ${networkId}`);
+        await monitorTransactions(networkId);
+        console.log(`Completed monitoring cycle for ${networkId}, sleeping for ${intervalMs}ms`);
+      } catch (error) {
+        console.error(`Error in monitoring cycle for ${networkId}:`, error);
+      }
+      
+      // Wait for the specified interval before the next cycle
+      await sleep(intervalMs);
+    }
+  })();
+  
+  // Return a function that can be used to stop the monitoring
+  return () => {
+    running = false;
+    console.log(`Stopping monitoring for ${networkId}`);
+  };
 }
