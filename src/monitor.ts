@@ -146,6 +146,7 @@ async function monitorTransactions(networkId: string): Promise<void> {
         `Resuming ${networkId} monitoring from block height ${reorgSafeStartHeight} to ${currentHeight} (accounting for possible reorgs)`,
       );
       const mempoolTxids = await getMempoolTxids(networkId);
+      const reversibleBlockTxids = [];
       // Process all blocks from last checked to current.
       // Consider possible reorg by start the search IRREVERSIBLE_THRESHOLD
       // blocks before the last checked.
@@ -159,6 +160,7 @@ async function monitorTransactions(networkId: string): Promise<void> {
         checkedBlocks[networkId].add(blockHash);
 
         const blockTxids = await getBlockTxids(blockHash, networkId);
+        reversibleBlockTxids = [...reversibleBlockTxids, ...blockTxids];
 
         // Get all transactions that need checking
         const txsToCheck = await db.all(`
@@ -187,9 +189,6 @@ async function monitorTransactions(networkId: string): Promise<void> {
               tx.txid,
             ]);
           } else if (tx.status === "reversible") {
-            //FIXME: the code below is wrong, in fact this should activate
-            //if the txId is not found in ALL the blocls from currentHeight - IRREVERSIBLE_THRESHOLD to the currentHeight
-            
             // This reversible transaction cannot be found anymore in the last
             // IRREVERSIBLE_THRESHOLD blocks!
             // This means it was either reorg or purged from the mempool.
