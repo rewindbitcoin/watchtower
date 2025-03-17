@@ -79,11 +79,6 @@ async function sendNotifications(networkId: string) {
         `Error sending notification for vault ${notification.vaultId}:`,
         error,
       );
-
-      // Clear the checked blocks cache for this network to ensure
-      // blocks are rechecked in the next cycle
-      checkedBlocks[networkId].clear();
-      logger.info(`Cleared checked blocks cache for ${networkId} due to error`);
     }
   }
 }
@@ -274,6 +269,11 @@ async function monitorTransactions(networkId: string): Promise<void> {
     );
   } catch (error) {
     logger.error(`Error in monitorTransactions for ${networkId}:`, error);
+
+    // Clear the checked blocks cache for this network to ensure
+    // blocks are rechecked in the next cycle
+    checkedBlocks[networkId].clear();
+    logger.info(`Cleared checked blocks cache for ${networkId} due to error`);
   }
 }
 
