@@ -146,7 +146,7 @@ async function monitorTransactions(networkId: string): Promise<void> {
         `Resuming ${networkId} monitoring from block height ${reorgSafeStartHeight} to ${currentHeight} (accounting for possible reorgs)`,
       );
       const mempoolTxids = await getMempoolTxids(networkId);
-      let reversibleBlockTxids: string[] = [];
+      const scannedBlockTxids: string[] = [];
       // Process all blocks from last checked to current.
       // Consider possible reorg by start the search IRREVERSIBLE_THRESHOLD
       // blocks before the last checked.
@@ -160,7 +160,7 @@ async function monitorTransactions(networkId: string): Promise<void> {
         checkedBlocks[networkId].add(blockHash);
 
         const blockTxids = await getBlockTxids(blockHash, networkId);
-        reversibleBlockTxids = [...reversibleBlockTxids, ...blockTxids];
+        scannedBlockTxids.push(...blockTxids);
 
         // Get all transactions that need checking
         const txsToCheck = await db.all(`
@@ -188,36 +188,44 @@ async function monitorTransactions(networkId: string): Promise<void> {
               "reversible",
               tx.txid,
             ]);
-          } else if (tx.status === "reversible") {
-            // This reversible transaction cannot be found anymore in the last
-            // IRREVERSIBLE_THRESHOLD blocks!
-            // This means it was either reorg or purged from the mempool.
+          }
+        }
+      }
 
-            // Reset the transaction status
-            await db.run("UPDATE vault_txids SET status = ? WHERE txid = ?", [
-              "unseen",
-              tx.txid,
-            ]);
+      const txsToCheck = await db.all(`
+          SELECT txid, status
+          FROM vault_txids
+          WHERE status = 'reversible'
+        `);
+      for (const tx of txsToCheck)
+        if (!scannedBlockTxids.includes(tx.txid)) {
+          // This reversible transaction cannot be found anymore in the last
+          // IRREVERSIBLE_THRESHOLD blocks!
+          // This means it was either reorg or purged from the mempool.
 
-            // Reset notifications for this transaction's vaultId back to pending
-            // so they can be sent again if the transaction reappears
-            await db.run(
-              `
+          // Reset the transaction status
+          await db.run("UPDATE vault_txids SET status = ? WHERE txid = ?", [
+            "unseen",
+            tx.txid,
+          ]);
+
+          // Reset notifications for this transaction's vaultId back to pending
+          // so they can be sent again if the transaction reappears
+          await db.run(
+            `
               UPDATE notifications 
               SET status = 'pending' 
               WHERE vaultId IN (
                 SELECT vaultId FROM vault_txids WHERE txid = ?
               )
             `,
-              [tx.txid],
-            );
+            [tx.txid],
+          );
 
-            console.log(
-              `Reset notifications for txid ${tx.txid} due to transaction disappearance (reorg or mempool purge)`,
-            );
-          }
+          console.log(
+            `Reset notifications for txid ${tx.txid} due to transaction disappearance (reorg or mempool purge)`,
+          );
         }
-      }
     }
     // Send notifications for triggered vaults
     await sendNotifications(networkId);
