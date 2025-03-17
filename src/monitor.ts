@@ -173,8 +173,9 @@ async function monitorTransactions(networkId: string): Promise<void> {
         for (const tx of txsToCheck) {
           if (blockTxids.includes(tx.txid)) {
             // Transaction found in this block
+            const confirmations = currentHeight - height + 1;
             const status =
-              currentHeight - height + 1 >= IRREVERSIBLE_THRESHOLD
+              confirmations >= IRREVERSIBLE_THRESHOLD
                 ? "irreversible"
                 : "reversible";
 
