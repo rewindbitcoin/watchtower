@@ -1,5 +1,3 @@
-import { format } from 'date-fns';
-
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 /**
@@ -13,10 +11,27 @@ export class Logger {
   }
 
   /**
+   * Format a timestamp in the format: YYYY-MM-DD HH:MM:SS.mmm
+   */
+  private formatTimestamp(date: Date): string {
+    const pad = (num: number, size: number = 2): string => {
+      let s = num.toString();
+      while (s.length < size) s = '0' + s;
+      return s;
+    };
+
+    return (
+      `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ` +
+      `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}.` +
+      `${pad(date.getMilliseconds(), 3)}`
+    );
+  }
+
+  /**
    * Format a log message with timestamp and context
    */
   private formatMessage(level: LogLevel, message: string, data?: any): string {
-    const timestamp = format(new Date(), 'yyyy-MM-dd HH:mm:ss.SSS');
+    const timestamp = this.formatTimestamp(new Date());
     let formattedMessage = `[${timestamp}] [${level.toUpperCase()}] [${this.context}] ${message}`;
     
     if (data) {
