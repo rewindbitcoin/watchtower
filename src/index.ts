@@ -6,6 +6,10 @@ import { registerRoutes } from "./routes";
 import { startMonitoring } from "./monitor";
 import { setRegtestApiUrl } from "./blockchain";
 import fs from "fs";
+import { createLogger } from "./logger";
+
+// Create logger for this module
+const logger = createLogger("Main");
 
 // Check for help flag
 if (process.argv.includes("--help") || process.argv.includes("-h")) {
@@ -83,11 +87,11 @@ if (dbFolder.trim() === "") {
 // Ensure the database folder exists
 try {
   if (!fs.existsSync(dbFolder)) {
-    console.log(`Creating database folder: ${dbFolder}`);
+    logger.info(`Creating database folder: ${dbFolder}`);
     fs.mkdirSync(dbFolder, { recursive: true });
   }
 } catch (error) {
-  console.error(`Error creating database folder: ${error}`);
+  logger.error(`Error creating database folder:`, error);
   process.exit(1);
 }
 
@@ -101,7 +105,7 @@ registerRoutes(app);
 // Start the server
 const server = app.listen(port, async () => {
   const address = server.address() as AddressInfo;
-  console.log(`Watchtower API running on port ${address.port}`);
+  logger.info(`Watchtower API running on port ${address.port}`);
 
   // Initialize databases for each enabled network
   const networks = [];
@@ -111,10 +115,10 @@ const server = app.listen(port, async () => {
     networks.push("bitcoin");
     const dbPathBitcoin = path.join(dbFolder, "watchtower.bitcoin.sqlite");
     await initDb(dbPathBitcoin, "bitcoin").catch((err) => {
-      console.error("Failed to initialize Bitcoin DB:", err);
+      logger.error("Failed to initialize Bitcoin DB:", err);
       process.exit(1);
     });
-    console.log("Bitcoin mainnet monitoring enabled");
+    logger.info("Bitcoin mainnet monitoring enabled");
     // Start monitoring for bitcoin
     stopFunctions.push(startMonitoring("bitcoin", 60000));
   }
@@ -123,10 +127,10 @@ const server = app.listen(port, async () => {
     networks.push("testnet");
     const dbPathTestnet = path.join(dbFolder, "watchtower.testnet.sqlite");
     await initDb(dbPathTestnet, "testnet").catch((err) => {
-      console.error("Failed to initialize Testnet DB:", err);
+      logger.error("Failed to initialize Testnet DB:", err);
       process.exit(1);
     });
-    console.log("Bitcoin testnet monitoring enabled");
+    logger.info("Bitcoin testnet monitoring enabled");
     // Start monitoring for testnet
     stopFunctions.push(startMonitoring("testnet", 60000));
   }
@@ -135,10 +139,10 @@ const server = app.listen(port, async () => {
     networks.push("tape");
     const dbPathTape = path.join(dbFolder, "watchtower.tape.sqlite");
     await initDb(dbPathTape, "tape").catch((err) => {
-      console.error("Failed to initialize Tape DB:", err);
+      logger.error("Failed to initialize Tape DB:", err);
       process.exit(1);
     });
-    console.log("Tape network enabled");
+    logger.info("Tape network enabled");
     // Start monitoring for tape
     stopFunctions.push(startMonitoring("tape", 60000));
   }
@@ -149,52 +153,52 @@ const server = app.listen(port, async () => {
     setRegtestApiUrl(regtestApiUrl);
     const dbPathRegtest = path.join(dbFolder, "watchtower.regtest.sqlite");
     await initDb(dbPathRegtest, "regtest").catch((err) => {
-      console.error("Failed to initialize Regtest DB:", err);
+      logger.error("Failed to initialize Regtest DB:", err);
       process.exit(1);
     });
-    console.log(
+    logger.info(
       `Bitcoin regtest monitoring enabled with API: ${regtestApiUrl}`,
     );
     // Start monitoring for regtest
     stopFunctions.push(startMonitoring("regtest", 30000)); // Faster polling for regtest
   }
 
-  console.log(`Monitoring networks: ${networks.join(", ")}`);
+  logger.info(`Monitoring networks: ${networks.join(", ")}`);
 
   // Setup graceful shutdown
   const shutdown = async (signal: string) => {
-    console.log(`\n${signal} received. Shutting down gracefully...`);
+    logger.warn(`${signal} received. Shutting down gracefully...`);
 
     // Stop all monitoring loops and wait for them to complete
-    console.log("Stopping monitoring loops...");
+    logger.info("Stopping monitoring loops...");
     const stopPromises = stopFunctions.map((stop) => stop());
     await Promise.all(stopPromises);
-    console.log("All monitoring loops stopped successfully");
+    logger.info("All monitoring loops stopped successfully");
 
     // Close server
-    console.log("Closing HTTP server...");
+    logger.info("Closing HTTP server...");
     await new Promise<void>((resolve) => {
       server.close(() => {
-        console.log("HTTP server closed.");
+        logger.info("HTTP server closed.");
         resolve();
       });
     });
 
     // Close database connections
-    console.log("Closing database connections...");
+    logger.info("Closing database connections...");
     try {
       await closeAllConnections();
-      console.log("All database connections closed.");
-      console.log("Shutdown complete.");
+      logger.info("All database connections closed.");
+      logger.info("Shutdown complete.");
       process.exit(0);
     } catch (err) {
-      console.error("Error closing database connections:", err);
+      logger.error("Error closing database connections:", err);
       process.exit(1);
     }
 
     // Force exit after timeout if graceful shutdown fails
     setTimeout(() => {
-      console.error("Forced shutdown after timeout!");
+      logger.error("Forced shutdown after timeout!");
       process.exit(1);
     }, 10000);
   };

@@ -7,6 +7,10 @@ import {
   getTxStatus,
 } from "./blockchain";
 import { sendPushNotification } from "./notifications";
+import { createLogger } from "./logger";
+
+// Create logger for this module
+const logger = createLogger("Monitor");
 
 // Number of blocks to check for reorgs
 const IRREVERSIBLE_THRESHOLD = 4;
@@ -53,11 +57,11 @@ async function sendNotifications(networkId: string) {
         [notification.vaultId, notification.pushToken],
       );
 
-      console.log(
+      logger.info(
         `Notification sent for vault ${notification.vaultId} to device ${notification.pushToken} (tx status: ${notification.status})`,
       );
     } catch (error) {
-      console.error(
+      logger.error(
         `Error sending notification for vault ${notification.vaultId}:`,
         error,
       );
@@ -81,7 +85,7 @@ async function monitorTransactions(networkId: string): Promise<void> {
     const currentHeight = parseInt(await getLatestBlockHeight(networkId), 10);
 
     if (!lastCheckedHeight) {
-      console.log(`First run for ${networkId}`);
+      logger.info(`First run for ${networkId}`);
 
       // Check if there are any vault_txids with status other than 'unchecked'
       const nonUncheckedTxs = await db.get(`
@@ -104,7 +108,7 @@ async function monitorTransactions(networkId: string): Promise<void> {
       `);
 
     if (uncheckedTxs.length) {
-      console.log(
+      logger.info(
         `Checking status of ${uncheckedTxs.length} unchecked transactions on ${networkId} network`,
       );
     }
@@ -135,14 +139,14 @@ async function monitorTransactions(networkId: string): Promise<void> {
       }
     }
     if (uncheckedTxs.length) {
-      console.log(
+      logger.info(
         `Completed checking ${uncheckedTxs.length} transactions on ${networkId} network`,
       );
     }
 
     if (lastCheckedHeight) {
       const reorgSafeStartHeight = lastCheckedHeight - IRREVERSIBLE_THRESHOLD;
-      console.log(
+      logger.info(
         `Resuming ${networkId} monitoring from block height ${reorgSafeStartHeight} to ${currentHeight} (accounting for possible reorgs)`,
       );
       const mempoolTxids = await getMempoolTxids(networkId);
@@ -233,7 +237,7 @@ async function monitorTransactions(networkId: string): Promise<void> {
             [tx.txid],
           );
 
-          console.log(
+          logger.warn(
             `Reset notifications for txid ${tx.txid} due to transaction disappearance (reorg or mempool purge)`,
           );
         }
@@ -246,11 +250,11 @@ async function monitorTransactions(networkId: string): Promise<void> {
       [currentHeight],
     );
 
-    console.log(
+    logger.info(
       `${networkId} monitoring completed. Checked blocks up to height ${currentHeight}`,
     );
   } catch (error) {
-    console.error(`Error in monitorTransactions for ${networkId}:`, error);
+    logger.error(`Error in monitorTransactions for ${networkId}:`, error);
   }
 }
 
@@ -265,7 +269,7 @@ function sleep(ms: number): Promise<void> {
  * Set up periodic monitoring
  */
 export function startMonitoring(networkId: string, intervalMs = 60000) {
-  console.log(`Starting transaction monitoring for ${networkId} network`);
+  logger.info(`Starting transaction monitoring for ${networkId} network`);
 
   // Flag to allow stopping the monitoring loop
   let running = true;
@@ -276,15 +280,15 @@ export function startMonitoring(networkId: string, intervalMs = 60000) {
     while (running) {
       try {
         // Run the monitoring cycle
-        console.log(`Starting monitoring cycle for ${networkId}`);
+        logger.info(`Starting monitoring cycle for ${networkId}`);
         currentCycle = monitorTransactions(networkId);
         await currentCycle;
         currentCycle = null;
-        console.log(
+        logger.info(
           `Completed monitoring cycle for ${networkId}, sleeping for ${intervalMs}ms`,
         );
       } catch (error) {
-        console.error(`Error in monitoring cycle for ${networkId}:`, error);
+        logger.error(`Error in monitoring cycle for ${networkId}:`, error);
         currentCycle = null;
       }
 
@@ -294,13 +298,13 @@ export function startMonitoring(networkId: string, intervalMs = 60000) {
         await sleep(intervalMs);
       }
     }
-    console.log(`Monitoring loop for ${networkId} has exited cleanly`);
+    logger.info(`Monitoring loop for ${networkId} has exited cleanly`);
   })();
 
   // Return a function that can be used to stop the monitoring
   return (): Promise<void> => {
     running = false;
-    console.log(
+    logger.info(
       `Stopping monitoring for ${networkId}. Waiting for current cycle to complete...`,
     );
 
@@ -309,7 +313,7 @@ export function startMonitoring(networkId: string, intervalMs = 60000) {
       if (currentCycle) {
         // If there's a cycle running, wait for it to complete
         currentCycle.finally(() => {
-          console.log(
+          logger.info(
             `Current cycle for ${networkId} completed after stop request`,
           );
           resolve();
