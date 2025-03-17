@@ -48,25 +48,25 @@ mkdir -p ./db
 Start the server to monitor all networks:
 
 ```bash
-npx ts-node src/index.ts --db-folder=./db
+npx ts-node src/index.ts --db-folder ./db
 ```
 
 You can disable specific networks:
 
 ```bash
-npx ts-node src/index.ts --db-folder=./db --disable-bitcoin --disable-regtest
+npx ts-node src/index.ts --db-folder ./db --disable-bitcoin --disable-tape
 ```
 
 Command line options:
 
 ```bash
-npx ts-node src/index.ts --db-folder=./db --port=3000 --disable-testnet --disable-tape
+npx ts-node src/index.ts --db-folder ./db --port 3000 --disable-testnet --disable-tape
 ```
 
 To enable regtest with a custom Esplora API URL:
 
 ```bash
-npx ts-node src/index.ts --db-folder=./db --enable-regtest=http://localhost:3002
+npx ts-node src/index.ts --db-folder ./db --enable-regtest http://localhost:3002
 ```
 
 Display help information:

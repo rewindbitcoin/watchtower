@@ -13,17 +13,17 @@ if (process.argv.includes("--help") || process.argv.includes("-h")) {
 Watchtower API for RewindBitcoin Wallet
 
 Usage:
-  npx ts-node src/index.ts --db-folder=<path> [options]
+  npx ts-node src/index.ts --db-folder <path> [options]
 
 Required:
-  --db-folder=<path>   Specify the folder path for database storage
+  --db-folder <path>   Specify the folder path for database storage
 
 Options:
-  --port=<number>      Specify the port number (random if not specified)
+  --port <number>      Specify the port number (random if not specified)
   --disable-bitcoin    Disable Bitcoin mainnet monitoring
   --disable-testnet    Disable Bitcoin testnet monitoring
   --disable-tape       Disable Tape network monitoring
-  --enable-regtest=<url> Enable Bitcoin regtest with custom Esplora API URL
+  --enable-regtest <url> Enable Bitcoin regtest with custom Esplora API URL
   --help, -h           Show this help message
 
 By default, the watchtower runs for bitcoin, testnet, and tape networks.
@@ -33,16 +33,29 @@ Regtest is disabled by default and must be explicitly enabled with a valid Esplo
 }
 
 // Parse command line arguments
-const portArg = process.argv.find((arg) => arg.startsWith("--port="));
-const dbFolderArg = process.argv.find((arg) => arg.startsWith("--db-folder="));
-const enableRegtestArg = process.argv.find((arg) => arg.startsWith("--enable-regtest="));
-const port = portArg ? parseInt(portArg.split("=")[1], 10) : 0; // Use 0 for random port assignment
+const portIndex = process.argv.indexOf("--port");
+const dbFolderIndex = process.argv.indexOf("--db-folder");
+const enableRegtestIndex = process.argv.indexOf("--enable-regtest");
+
+// Get port value (next argument after --port)
+const port = portIndex !== -1 && portIndex < process.argv.length - 1 
+  ? parseInt(process.argv[portIndex + 1], 10) 
+  : 0; // Use 0 for random port assignment
+
+// Get database folder (next argument after --db-folder)
+const dbFolder = dbFolderIndex !== -1 && dbFolderIndex < process.argv.length - 1 
+  ? process.argv[dbFolderIndex + 1] 
+  : null;
+
+// Get regtest API URL (next argument after --enable-regtest)
+const regtestApiUrl = enableRegtestIndex !== -1 && enableRegtestIndex < process.argv.length - 1 
+  ? process.argv[enableRegtestIndex + 1] 
+  : null;
 
 // Check which networks to run
 const runBitcoin = !process.argv.includes("--disable-bitcoin");
 const runTestnet = !process.argv.includes("--disable-testnet");
 const runTape = !process.argv.includes("--disable-tape");
-const regtestApiUrl = enableRegtestArg ? enableRegtestArg.split("=")[1] : null;
 
 // Ensure at least one network is enabled
 if (!runBitcoin && !runTestnet && !runTape && !regtestApiUrl) {
@@ -51,18 +64,16 @@ if (!runBitcoin && !runTestnet && !runTape && !regtestApiUrl) {
 }
 
 // Validate database folder path
-if (!dbFolderArg) {
+if (!dbFolder) {
   console.error("Error: Database folder path is required.");
-  console.error("Please provide the --db-folder=<path> argument.");
-  console.error("Example: npx ts-node src/index.ts --db-folder=./db");
+  console.error("Please provide the --db-folder <path> argument.");
+  console.error("Example: npx ts-node src/index.ts --db-folder ./db");
   process.exit(1);
 }
 
-// Extract and validate the database folder path
-const dbFolder = dbFolderArg.split("=")[1];
-if (!dbFolder || dbFolder.trim() === "") {
+if (dbFolder.trim() === "") {
   console.error("Error: Database folder path cannot be empty.");
-  console.error("Please provide a valid path with --db-folder=<path>");
+  console.error("Please provide a valid path with --db-folder <path>");
   process.exit(1);
 }
 
