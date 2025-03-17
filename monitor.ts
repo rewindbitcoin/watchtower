@@ -19,36 +19,6 @@ const checkedBlocks: Record<string, Set<number>> = {
 };
 
 /**
- * Initialize the monitoring system
- * @returns An object with lastCheckedHeight and isFirstRun flag
- */
-async function initMonitoring(networkId: string): Promise<{ lastCheckedHeight: number, isFirstRun: boolean }> {
-  const db = getDb(networkId);
-  
-  // Get the last checked height from the database
-  const state = await db.get("SELECT last_checked_height FROM network_state WHERE id = 1");
-  
-  // True first run - no state record exists or last_checked_height is null
-  if (!state || state.last_checked_height === null) {
-    // Get current height to initialize
-    const currentHeight = parseInt(await getLatestBlockHeight(networkId), 10);
-    const startHeight = Math.max(0, currentHeight);
-    
-    // Create state record with initial height
-    await db.run(
-      "INSERT OR REPLACE INTO network_state (id, last_checked_height) VALUES (1, ?)",
-      [startHeight]
-    );
-    
-    console.log(`First run: Initialized ${networkId} monitoring from block height ${startHeight}`);
-    return { lastCheckedHeight: startHeight, isFirstRun: true };
-  }
-  
-  console.log(`Resuming ${networkId} monitoring from block height ${state.last_checked_height}`);
-  return { lastCheckedHeight: state.last_checked_height, isFirstRun: false };
-}
-
-/**
  * Check if a transaction exists in a block or mempool
  */
 async function checkTransactionInBlockOrMempool(txid: string, blockTxids: string[], mempoolTxids: string[]): Promise<string> {
@@ -107,7 +77,7 @@ async function sendNotifications(networkId: string) {
         [notificationStatus, notification.vaultId, notification.pushToken]
       );
       
-      console.log(`Notification sent for vault ${notification.vaultId} to device ${notification.pushToken} (${status})`);
+      console.log(`Notification sent for vault ${notification.vaultId} to device ${notification.pushToken} (${notificationStatus})`);
     } catch (error) {
       console.error(`Error sending notification for vault ${notification.vaultId}:`, error);
     }
@@ -121,9 +91,25 @@ async function monitorTransactions(networkId: string) {
   const db = getDb(networkId);
   
   try {
-    // Initialize monitoring and get state
-    const { lastCheckedHeight, isFirstRun } = await initMonitoring(networkId);
+    // Get the current blockchain tip height
     const currentHeight = parseInt(await getLatestBlockHeight(networkId), 10);
+    
+    // Get the last checked height from the database
+    const state = await db.get("SELECT last_checked_height FROM network_state WHERE id = 1");
+    
+    // Determine if this is the first run and get the last checked height
+    const isFirstRun = !state || state.last_checked_height === null;
+    const lastCheckedHeight = isFirstRun ? 0 : state.last_checked_height;
+    
+    if (isFirstRun) {
+      console.log(`First run for ${networkId}: Creating initial state record`);
+      // Create state record without setting last_checked_height yet
+      await db.run(
+        "INSERT OR IGNORE INTO network_state (id, last_checked_height) VALUES (1, NULL)"
+      );
+    } else {
+      console.log(`Resuming ${networkId} monitoring from block height ${lastCheckedHeight}`);
+    }
     
     // Get mempool transactions
     const mempoolTxids = await getMempoolTxids(networkId);
@@ -230,14 +216,14 @@ async function monitorTransactions(networkId: string) {
     
     // Reorg checking removed for now - will be implemented later
     
-    // Update the last checked height
+    // Send notifications for triggered vaults
+    await sendNotifications(networkId);
+    
+    // Only update the last checked height after all checks are complete
     await db.run(
       "UPDATE network_state SET last_checked_height = ? WHERE id = 1",
       [currentHeight]
     );
-    
-    // Send notifications for triggered vaults
-    await sendNotifications(networkId);
     
     console.log(`${networkId} monitoring completed. Checked blocks up to height ${currentHeight}`);
   } catch (error) {
