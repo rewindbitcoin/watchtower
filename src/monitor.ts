@@ -29,13 +29,47 @@ const logger = createLogger("Monitor");
 // Number of blocks to check for reorgs
 const IRREVERSIBLE_THRESHOLD = 4;
 
-// In-memory cache of checked blocks by hash
-const checkedBlocks: Record<string, Set<string>> = {
-  bitcoin: new Set(),
-  testnet: new Set(),
-  tape: new Set(),
-  regtest: new Set(),
+// In-memory cache of block transactions to avoid redundant network calls
+// Structure: { networkId: { blockHash: string[] } }
+const blockTxidsCache: Record<string, Record<string, string[]>> = {
+  bitcoin: {},
+  testnet: {},
+  tape: {},
+  regtest: {},
 };
+
+// Maximum number of blocks to keep in the cache per network
+const MAX_CACHED_BLOCKS = IRREVERSIBLE_THRESHOLD * 2;
+
+/**
+ * Get block transactions with caching to reduce network calls
+ * Returns cached transactions if available, otherwise fetches from network
+ */
+async function getCachedBlockTxids(blockHash: string, networkId: string): Promise<string[]> {
+  // Check if we have this block's transactions in cache
+  if (blockTxidsCache[networkId][blockHash]) {
+    return blockTxidsCache[networkId][blockHash];
+  }
+  
+  // Not in cache, fetch from network
+  const blockTxids = await getBlockTxids(blockHash, networkId);
+  
+  // Add to cache
+  blockTxidsCache[networkId][blockHash] = blockTxids;
+  
+  // Prune cache if it gets too large
+  const blockHashes = Object.keys(blockTxidsCache[networkId]);
+  if (blockHashes.length > MAX_CACHED_BLOCKS) {
+    // Remove oldest entries (we'll remove 25% of the cache)
+    const toRemove = Math.ceil(blockHashes.length * 0.25);
+    const oldestHashes = blockHashes.slice(0, toRemove);
+    for (const hash of oldestHashes) {
+      delete blockTxidsCache[networkId][hash];
+    }
+  }
+  
+  return blockTxids;
+}
 
 /**
  * Send notifications for triggered vaults
@@ -174,10 +208,9 @@ async function monitorTransactions(networkId: string): Promise<void> {
         height++
       ) {
         const blockHash = await getBlockHashByHeight(height, networkId);
-        if (checkedBlocks[networkId].has(blockHash)) continue;
-        checkedBlocks[networkId].add(blockHash);
-
-        const blockTxids = await getBlockTxids(blockHash, networkId);
+        
+        // Get block transactions (from cache if available)
+        const blockTxids = await getCachedBlockTxids(blockHash, networkId);
         scannedBlockTxids.push(...blockTxids);
 
         // Get all transactions that need checking
@@ -270,10 +303,10 @@ async function monitorTransactions(networkId: string): Promise<void> {
   } catch (error) {
     logger.error(`Error in monitorTransactions for ${networkId}:`, error);
 
-    // Clear the checked blocks cache for this network to ensure
-    // blocks are rechecked in the next cycle
-    checkedBlocks[networkId].clear();
-    logger.info(`Cleared checked blocks cache for ${networkId} due to error`);
+    // Clear the block txids cache for this network to ensure
+    // fresh data in the next cycle
+    blockTxidsCache[networkId] = {};
+    logger.info(`Cleared block txids cache for ${networkId} due to error`);
   }
 }
 
