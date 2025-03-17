@@ -1,3 +1,17 @@
+/**
+ * Project: Rewind Bitcoin
+ * Website: https://rewindbitcoin.com
+ *
+ * Author: Jose-Luis Landabaso
+ * Email: landabaso@gmail.com
+ *
+ * Contact Email: hello@rewindbitcoin.com
+ *
+ * License: MIT License
+ *
+ * Copyright (c) 2025 Jose-Luis Landabaso, Rewind Bitcoin
+ */
+
 import { createLogger } from "./logger";
 
 // Create logger for this module
