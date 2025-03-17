@@ -188,6 +188,7 @@ async function monitorTransactions(networkId: string): Promise<void> {
           tx.txid,
         ]);
       }
+      await sleep(200); //be nice: 5 per second
     }
     if (uncheckedTxs.length) {
       logger.info(
