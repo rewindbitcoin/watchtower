@@ -46,7 +46,9 @@ export async function getBlockHashByHeight(
   const baseUrl = API_BASE_URLS[network as keyof typeof API_BASE_URLS];
   const response = await fetch(`${baseUrl}/block-height/${height}`);
   if (!response.ok)
-    throw new Error(`Failed to fetch block hash for height ${height} on network ${network}: ${response.statusText}`);
+    throw new Error(
+      `Failed to fetch block hash for height ${height} on network ${network}: ${response.statusText}`,
+    );
   return response.text();
 }
 
