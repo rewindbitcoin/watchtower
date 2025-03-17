@@ -237,7 +237,7 @@ async function monitorTransactions(networkId: string): Promise<void> {
               status,
               tx.txid,
             ]);
-          } else if (mempoolTxids.includes(tx.txid)) {
+          } else if (mempoolTxids.includes(tx.txid) && tx.status === "unseen") {
             // Transaction is in mempool
             await db.run("UPDATE vault_txids SET status = ? WHERE txid = ?", [
               "reversible",
