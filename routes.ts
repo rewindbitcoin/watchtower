@@ -62,18 +62,11 @@ export function registerRoutes(app: Express) {
           if (result.changes || 0 > 0) {
             // Process each transaction ID only if this is a new notification
             for (const txid of triggerTxIds) {
-              // Check if this txid is already being monitored
-              const existing = await db.get(
-                "SELECT txid FROM vault_txids WHERE txid = ?",
-                [txid],
+              // Insert transaction if it doesn't exist yet
+              await db.run(
+                "INSERT OR IGNORE INTO vault_txids (txid, vaultId, status) VALUES (?, ?, 'unknown')",
+                [txid, vaultId],
               );
-              if (!existing) {
-                // Insert new transaction to monitor with default status of 'unknown'
-                await db.run(
-                  "INSERT INTO vault_txids (txid, vaultId, status) VALUES (?, ?, 'unknown')",
-                  [txid, vaultId],
-                );
-              }
             }
           } else {
             console.log(
