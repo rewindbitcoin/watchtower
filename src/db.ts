@@ -35,7 +35,7 @@ export async function initDb(dbPath: string, networkId: string) {
       walletName TEXT NOT NULL,
       vaultNumber INTEGER NOT NULL,
       status TEXT DEFAULT 'pending', -- 'pending' or 'sent'
-      firstAttemptAt INTEGER DEFAULT (strftime('%s','now')), -- Unix timestamp of first attempt
+      firstAttemptAt INTEGER DEFAULT NULL, -- Unix timestamp of first attempt, NULL until first attempt
       PRIMARY KEY (pushToken, vaultId)
     );
 
