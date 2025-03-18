@@ -162,10 +162,11 @@ async function monitorTransactions(networkId: string): Promise<void> {
         `Checking status of ${uncheckedTxs.length} unchecked transactions on ${networkId} network`,
       );
     }
+    const mempoolTxids = await getMempoolTxids(networkId);
     for (const tx of uncheckedTxs) {
       const txStatus = await getTxStatus(tx.txid, networkId);
 
-      if (txStatus) {
+      if (txStatus.confirmed || mempoolTxids.includes(tx.txid)) {
         // Transaction is confirmed in a block
         const confirmations = txStatus.block_height
           ? currentHeight - txStatus.block_height + 1
@@ -200,7 +201,6 @@ async function monitorTransactions(networkId: string): Promise<void> {
       logger.info(
         `Resuming ${networkId} monitoring from block height ${reorgSafeStartHeight} to ${currentHeight} (accounting for possible reorgs)`,
       );
-      const mempoolTxids = await getMempoolTxids(networkId);
       const scannedBlockTxids: string[] = [];
       // Process all blocks from last checked to current.
       // Consider possible reorg by start the search IRREVERSIBLE_THRESHOLD
