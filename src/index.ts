@@ -32,10 +32,10 @@ if (process.argv.includes("--help") || process.argv.includes("-h")) {
 Watchtower API for RewindBitcoin Wallet
 
 Usage:
-  npx ts-node src/index.ts --db-folder <path> [options]
+  npx ts-node src/index.ts [options]
 
-Required:
-  --db-folder <path>   Specify the folder path for database storage
+Options:
+  --db-folder <path>       Specify the folder path for database storage (default: ./db)
 
 Options:
   --port <number>          Specify the port number (random if not specified)
@@ -64,11 +64,11 @@ const port =
     ? parseInt(process.argv[portIndex + 1], 10)
     : 0; // Use 0 for random port assignment
 
-// Get database folder (next argument after --db-folder)
+// Get database folder (next argument after --db-folder) or default to ./db
 const dbFolder =
   dbFolderIndex !== -1 && dbFolderIndex < process.argv.length - 1
     ? process.argv[dbFolderIndex + 1]
-    : null;
+    : "./db";
 
 // Get regtest API URL (next argument after --enable-regtest)
 const regtestApiUrl =
@@ -88,13 +88,6 @@ if (!runBitcoin && !runTestnet && !runTape && !regtestApiUrl) {
 }
 
 // Validate database folder path
-if (!dbFolder) {
-  console.error("Error: Database folder path is required.");
-  console.error("Please provide the --db-folder <path> argument.");
-  console.error("Example: npx ts-node src/index.ts --db-folder ./db");
-  process.exit(1);
-}
-
 if (dbFolder.trim() === "") {
   console.error("Error: Database folder path cannot be empty.");
   console.error("Please provide a valid path with --db-folder <path>");
