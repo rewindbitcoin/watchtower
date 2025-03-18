@@ -1,6 +1,6 @@
 {
   "name": "@rewindbitcoin/watchtower",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "type": "commonjs",
   "description": "Monitoring service for RewindBitcoin Wallet that tracks Bitcoin transactions and sends push notifications",
   "main": "dist/src/index.js",
