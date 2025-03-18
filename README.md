@@ -154,12 +154,12 @@ commitment verification is enabled.
 
 ### **1️⃣ Register Vaults to Be Monitored**
 
-**`POST /register`** or **`POST /:networkId/register`**
+**`POST /watchtower/register`** or **`POST /:networkId/watchtower/register`**
 
 - **Purpose:** Registers vaults and associates them with a push notification token.
 - **URL Parameters:**
   - `networkId`: The Bitcoin network (`bitcoin`, `testnet`, `tape`, or `regtest`)
-  - If using `/register` without networkId, defaults to `bitcoin` mainnet
+  - If using `/watchtower/register` without networkId, defaults to `bitcoin` mainnet
 - **Request Body:**
 
   ```json

@@ -26,11 +26,11 @@ export function registerRoutes(
   requireCommitments = false,
 ) {
   /**
-   * POST /register and /:networkId/register
+   * POST /watchtower/register and /:networkId/watchtower/register
    * Registers vaults and associates them with a push token.
    */
   app.post(
-    ["/register", "/:networkId/register"],
+    ["/watchtower/register", "/:networkId/watchtower/register"],
     async (req: Request, res: Response): Promise<void> => {
       // Default to bitcoin if no networkId is provided in the path
       const networkId = req.params.networkId || "bitcoin";
@@ -194,7 +194,7 @@ export function registerRoutes(
         return;
       } catch (err: any) {
         const errorMessage = err instanceof Error ? err.message : String(err);
-        logger.error(`Error in /${networkId}/register:`, {
+        logger.error(`Error in /${networkId}/watchtower/register:`, {
           error: errorMessage,
           stack: err instanceof Error ? err.stack : undefined,
           walletName,
