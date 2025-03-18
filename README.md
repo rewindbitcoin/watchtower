@@ -188,7 +188,7 @@ The Watchtower uses an efficient monitoring strategy to minimize API calls:
    - Mark notifications as 'sent' or 'pending'
    - Update the last checked height
 
-3. **Reorg handling:** Recheck the last 6 blocks (IRREVERSIBLE_THRESHOLD) on each
+3. **Reorg handling:** Recheck the last 4 blocks (IRREVERSIBLE_THRESHOLD) on each
    cycle to handle potential blockchain reorganizations
 
 4. **In-memory caching:** Keep track of checked blocks in memory to avoid
