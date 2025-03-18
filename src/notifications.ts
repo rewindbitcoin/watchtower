@@ -19,6 +19,8 @@ const logger = createLogger("Notifications");
 
 export interface NotificationData {
   vaultId: string;
+  walletName: string;
+  vaultNumber: number;
   txid: string;
 }
 
