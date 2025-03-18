@@ -122,6 +122,7 @@ The Watchtower API uses **SQLite** with the following structure:
 | `pushToken` | TEXT | Device push notification token |
 | `vaultId` | TEXT | Associated vault ID |
 | `walletName` | TEXT | Name of the wallet containing the vault |
+| `vaultNumber` | INTEGER | The nth vault created in the wallet (0-based) |
 | `status` | TEXT | Status: 'pending' (not sent yet) or 'sent' |
 
 **Vault Transactions Table:**
@@ -168,11 +169,13 @@ commitment verification is enabled.
     "vaults": [
       {
         "vaultId": "vault123",
+        "vaultNumber": 0,
         "triggerTxIds": ["txid1", "txid2"],
         "commitment": "0200000001abcdef..." // Optional with --with-commitments
       },
       {
         "vaultId": "vault456",
+        "vaultNumber": 1,
         "triggerTxIds": ["txid3", "txid4"],
         "commitment": "0200000001ghijkl..." // Optional
       }
@@ -246,6 +249,7 @@ vault is accessed.
   "data": {
     "vaultId": "vault123",
     "walletName": "My Bitcoin Wallet",
+    "vaultNumber": 0,
     "txid": "abcdef1234567890abcdef1234567890"
   }
 }

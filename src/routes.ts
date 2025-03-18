@@ -60,13 +60,13 @@ export function registerRoutes(
 
         // Insert or update each vault and its transaction ids.
         for (const vault of vaults) {
-          const { vaultId, triggerTxIds, commitment } = vault;
-          if (!vaultId || !Array.isArray(triggerTxIds)) {
+          const { vaultId, triggerTxIds, commitment, vaultNumber } = vault;
+          if (!vaultId || !Array.isArray(triggerTxIds) || vaultNumber === undefined) {
             res
               .status(400)
               .json({
                 error:
-                  "Invalid vault data. vaultId and triggerTxIds array are required",
+                  "Invalid vault data. vaultId, vaultNumber, and triggerTxIds array are required",
               });
             return;
           }
@@ -122,8 +122,8 @@ export function registerRoutes(
           try {
             // Insert notification entry and check if it was actually inserted
             const result = await db.run(
-              `INSERT OR IGNORE INTO notifications (pushToken, vaultId, walletName, status) VALUES (?, ?, ?, 'pending')`,
-              [pushToken, vaultId, walletName],
+              `INSERT OR IGNORE INTO notifications (pushToken, vaultId, walletName, vaultNumber, status) VALUES (?, ?, ?, ?, 'pending')`,
+              [pushToken, vaultId, walletName, vaultNumber],
             );
 
             // If changes === 0, the entry already existed, so skip processing txids

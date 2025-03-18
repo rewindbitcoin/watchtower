@@ -33,6 +33,7 @@ export async function initDb(dbPath: string, networkId: string) {
       pushToken TEXT NOT NULL,
       vaultId TEXT NOT NULL,
       walletName TEXT NOT NULL,
+      vaultNumber INTEGER NOT NULL,
       status TEXT DEFAULT 'pending', -- 'pending' or 'sent'
       PRIMARY KEY (pushToken, vaultId)
     );
