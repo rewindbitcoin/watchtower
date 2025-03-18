@@ -6,6 +6,7 @@
     "build": "tsc"
   },
   "dependencies": {
+    "bitcoinjs-lib": "^6.1.7",
     "commander": "^13.1.0",
     "express": "^4.21.2",
     "sqlite": "^5.1.1",
