@@ -14,8 +14,7 @@
   },
   "files": [
     "dist",
-    "README.md",
-    "LICENSE"
+    "README.md"
   ],
   "dependencies": {
     "bitcoinjs-lib": "^6.1.7",
@@ -25,6 +24,7 @@
     "sqlite3": "^5.1.7"
   },
   "devDependencies": {
-    "@types/express": "^5.0.0"
+    "@types/express": "^5.0.0",
+    "typescript": "^5.8.2"
   }
 }

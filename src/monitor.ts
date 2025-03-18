@@ -98,7 +98,6 @@ async function sendNotifications(networkId: string) {
         data: {
           vaultId: notification.vaultId,
           txid: notification.txid,
-          status: notification.status,
         },
       });
 
