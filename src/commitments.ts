@@ -121,7 +121,9 @@ async function getAddressesDb(networkId: string, dbPath: string): Promise<any> {
   );
 
   if (!tableExists) {
-    logger.warn(`Addresses table does not exist in database: ${dbPath}. This database is managed by another process and should contain the addresses table.`);
+    logger.warn(
+      `Addresses table does not exist in database: ${dbPath}. This database is managed by another process and should contain the addresses table.`,
+    );
     return db;
   }
 
