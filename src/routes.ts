@@ -20,7 +20,11 @@ import { verifyCommitment } from "./commitments";
 // Create logger for this module
 const logger = createLogger("Routes");
 
-export function registerRoutes(app: Express, dbFolder: string, requireCommitments = false) {
+export function registerRoutes(
+  app: Express,
+  dbFolder: string,
+  requireCommitments = false,
+) {
   /**
    * POST /register and /:networkId/register
    * Registers vaults and associates them with a push token.
@@ -60,18 +64,24 @@ export function registerRoutes(app: Express, dbFolder: string, requireCommitment
           // Verify commitment if required
           if (requireCommitments) {
             if (!commitment) {
-              res.status(400).json({ 
-                error: "Missing commitment", 
-                message: "A commitment transaction is required for vault registration" 
+              res.status(400).json({
+                error: "Missing commitment",
+                message:
+                  "A commitment transaction is required for vault registration",
               });
               return;
             }
-            
-            const isValid = await verifyCommitment(commitment, networkId, dbFolder);
+
+            const isValid = await verifyCommitment(
+              commitment,
+              networkId,
+              dbFolder,
+            );
             if (!isValid) {
               res.status(403).json({
                 error: "Invalid commitment",
-                message: "The commitment transaction does not pay to an authorized address"
+                message:
+                  "The commitment transaction does not pay to an authorized address",
               });
               return;
             }

@@ -113,6 +113,7 @@ async function getAddressesDb(networkId: string, dbPath: string): Promise<any> {
   const db = await open({
     filename: dbPath,
     driver: sqlite3.Database,
+    mode: sqlite3.OPEN_READONLY,
   });
 
   // Check if the addresses table exists
