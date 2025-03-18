@@ -47,7 +47,8 @@ npx @rewindbitcoin/watchtower --port 3000
 npx @rewindbitcoin/watchtower --disable-testnet --disable-tape
 
 # Enable regtest with custom Esplora API URL
-npx @rewindbitcoin/watchtower --enable-regtest http://localhost:3002
+npx @rewindbitcoin/watchtower --enable-regtest \
+  http://localhost:3002
 
 # Enable commitment verification
 npx @rewindbitcoin/watchtower --with-commitments
@@ -120,7 +121,7 @@ The Watchtower API uses **SQLite** with the following structure:
 | `pushToken` | TEXT | Device push notification token |
 | `vaultId` | TEXT | Associated vault ID |
 | `walletName` | TEXT | Name of the wallet containing the vault |
-| `status` | TEXT | Status: 'pending' (notification not sent yet) or 'sent' (notification already sent) |
+| `status` | TEXT | Status: 'pending' (not sent yet) or 'sent' |
 
 **Vault Transactions Table:**
 | Column | Type | Description |
@@ -165,7 +166,7 @@ This table is stored in a separate database file (`{networkId}.sqlite`) and is m
         "vaultId": "vault123",
         "walletName": "My Bitcoin Wallet",
         "triggerTxIds": ["txid1", "txid2"],
-        "commitment": "0200000001abcdef..." // Optional, required when --with-commitments is enabled
+        "commitment": "0200000001abcdef..." // Optional with --with-commitments
       },
       {
         "vaultId": "vault456",
@@ -179,7 +180,8 @@ This table is stored in a separate database file (`{networkId}.sqlite`) and is m
 
 - **Commitment Verification:**
 
-  - When enabled with `--with-commitments` flag, each vault registration requires a valid commitment
+  - When enabled with `--with-commitments` flag, each vault registration 
+    requires a valid commitment
   - The `commitment` field contains a hex-encoded Bitcoin transaction
   - This transaction must pay to at least one authorized address
   - Authorized addresses are stored in a separate database (`{networkId}.sqlite`)
