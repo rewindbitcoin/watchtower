@@ -164,16 +164,15 @@ commitment verification is enabled.
   ```json
   {
     "pushToken": "ExponentPushToken[xyz]",
+    "walletName": "My Bitcoin Wallet",
     "vaults": [
       {
         "vaultId": "vault123",
-        "walletName": "My Bitcoin Wallet",
         "triggerTxIds": ["txid1", "txid2"],
         "commitment": "0200000001abcdef..." // Optional with --with-commitments
       },
       {
         "vaultId": "vault456",
-        "walletName": "My Other Wallet",
         "triggerTxIds": ["txid3", "txid4"],
         "commitment": "0200000001ghijkl..." // Optional
       }
