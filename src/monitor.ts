@@ -90,30 +90,47 @@ async function sendNotifications(networkId: string) {
 
   for (const notification of notificationsToSend) {
     try {
+      // Get wallet name and vault number for this notification
+      const notificationDetails = await db.get(
+        "SELECT walletName, vaultNumber FROM notifications WHERE vaultId = ? AND pushToken = ?",
+        [notification.vaultId, notification.pushToken]
+      );
+      
       // Send notification
-      await sendPushNotification({
+      const success = await sendPushNotification({
         to: notification.pushToken,
         title: "Vault Access Alert!",
-        body: `Your vault ${notification.vaultId} is being accessed!`,
+        body: `Your vault ${notification.vaultId} in wallet '${notificationDetails.walletName}' is being accessed!`,
         data: {
           vaultId: notification.vaultId,
+          walletName: notificationDetails.walletName,
+          vaultNumber: notificationDetails.vaultNumber,
           txid: notification.txid,
         },
       });
 
-      // Update notification status to 'sent'
-      await db.run(
-        "UPDATE notifications SET status = 'sent' WHERE vaultId = ? AND pushToken = ?",
-        [notification.vaultId, notification.pushToken],
-      );
+      if (success) {
+        // Update notification status to 'sent' only if the push was successful
+        await db.run(
+          "UPDATE notifications SET status = 'sent' WHERE vaultId = ? AND pushToken = ?",
+          [notification.vaultId, notification.pushToken]
+        );
 
-      logger.info(
-        `Notification sent for vault ${notification.vaultId} to device ${notification.pushToken} (tx status: ${notification.status})`,
-      );
+        logger.info(
+          `Notification sent for vault ${notification.vaultId} to device ${notification.pushToken} (tx status: ${notification.status})`,
+          { walletName: notificationDetails.walletName, vaultNumber: notificationDetails.vaultNumber }
+        );
+      } else {
+        logger.error(
+          `Failed to send push notification for vault ${notification.vaultId}. Will retry in next cycle.`,
+          { pushToken: notification.pushToken.substring(0, 10) + "..." }
+        );
+        // We don't update the status, so it will be retried in the next cycle
+      }
     } catch (error) {
       logger.error(
         `Error sending notification for vault ${notification.vaultId}:`,
-        error,
+        error
       );
     }
   }
