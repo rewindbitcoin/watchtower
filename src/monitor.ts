@@ -114,10 +114,10 @@ async function sendNotifications(networkId: string) {
       if (notification.firstAttemptAt === null) {
         await db.run(
           "UPDATE notifications SET firstAttemptAt = strftime('%s','now') WHERE vaultId = ? AND pushToken = ?",
-          [notification.vaultId, notification.pushToken]
+          [notification.vaultId, notification.pushToken],
         );
       }
-      
+
       // Send notification
       const success = await sendPushNotification({
         to: notification.pushToken,
