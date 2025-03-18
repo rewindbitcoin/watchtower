@@ -93,9 +93,9 @@ async function sendNotifications(networkId: string) {
       // Get wallet name and vault number for this notification
       const notificationDetails = await db.get(
         "SELECT walletName, vaultNumber FROM notifications WHERE vaultId = ? AND pushToken = ?",
-        [notification.vaultId, notification.pushToken]
+        [notification.vaultId, notification.pushToken],
       );
-      
+
       // Send notification
       const success = await sendPushNotification({
         to: notification.pushToken,
@@ -113,24 +113,27 @@ async function sendNotifications(networkId: string) {
         // Update notification status to 'sent' only if the push was successful
         await db.run(
           "UPDATE notifications SET status = 'sent' WHERE vaultId = ? AND pushToken = ?",
-          [notification.vaultId, notification.pushToken]
+          [notification.vaultId, notification.pushToken],
         );
 
         logger.info(
           `Notification sent for vault ${notification.vaultId} to device ${notification.pushToken} (tx status: ${notification.status})`,
-          { walletName: notificationDetails.walletName, vaultNumber: notificationDetails.vaultNumber }
+          {
+            walletName: notificationDetails.walletName,
+            vaultNumber: notificationDetails.vaultNumber,
+          },
         );
       } else {
         logger.error(
           `Failed to send push notification for vault ${notification.vaultId}. Will retry in next cycle.`,
-          { pushToken: notification.pushToken.substring(0, 10) + "..." }
+          { pushToken: notification.pushToken.substring(0, 10) + "..." },
         );
         // We don't update the status, so it will be retried in the next cycle
       }
     } catch (error) {
       logger.error(
         `Error sending notification for vault ${notification.vaultId}:`,
-        error
+        error,
       );
     }
   }
