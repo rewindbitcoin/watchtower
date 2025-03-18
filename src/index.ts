@@ -19,6 +19,7 @@ import { initDb, closeAllConnections } from "./db";
 import { registerRoutes } from "./routes";
 import { startMonitoring } from "./monitor";
 import { setRegtestApiUrl } from "./blockchain";
+import { closeAllAddressDbConnections } from "./commitments";
 import fs from "fs";
 import { createLogger } from "./logger";
 
@@ -42,6 +43,7 @@ Options:
   --disable-testnet        Disable Bitcoin testnet monitoring
   --disable-tape           Disable Tape network monitoring
   --enable-regtest <url>   Enable Bitcoin regtest with custom Esplora API URL
+  --with-commitments       Enable commitment verification for vault registration
   --help, -h               Show this help message
 
 By default, the watchtower runs for bitcoin, testnet, and tape networks.
@@ -54,6 +56,7 @@ Regtest is disabled by default and must be explicitly enabled with a valid Esplo
 const portIndex = process.argv.indexOf("--port");
 const dbFolderIndex = process.argv.indexOf("--db-folder");
 const enableRegtestIndex = process.argv.indexOf("--enable-regtest");
+const requireCommitments = process.argv.includes("--with-commitments");
 
 // Get port value (next argument after --port)
 const port =
@@ -114,7 +117,7 @@ const app = express();
 app.use(express.json());
 
 // Register API routes
-registerRoutes(app);
+registerRoutes(app, dbFolder, requireCommitments);
 
 // Start the server
 const server = app.listen(port, async () => {
@@ -202,6 +205,7 @@ const server = app.listen(port, async () => {
     logger.info("Closing database connections...");
     try {
       await closeAllConnections();
+      await closeAllAddressDbConnections();
       logger.info("All database connections closed.");
       logger.info("Shutdown complete.");
       process.exit(0);

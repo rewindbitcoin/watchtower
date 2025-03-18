@@ -15,11 +15,12 @@
 import { Express, Request, Response } from "express";
 import { getDb } from "./db";
 import { createLogger } from "./logger";
+import { verifyCommitment } from "./commitments";
 
 // Create logger for this module
 const logger = createLogger("Routes");
 
-export function registerRoutes(app: Express) {
+export function registerRoutes(app: Express, dbFolder: string, requireCommitments = false) {
   /**
    * POST /register and /:networkId/register
    * Registers vaults and associates them with a push token.
@@ -50,10 +51,31 @@ export function registerRoutes(app: Express) {
 
         // Insert or update each vault and its transaction ids.
         for (const vault of vaults) {
-          const { vaultId, triggerTxIds } = vault;
+          const { vaultId, triggerTxIds, commitment } = vault;
           if (!vaultId || !Array.isArray(triggerTxIds)) {
             res.status(400).json({ error: "Invalid vault data" });
             return;
+          }
+
+          // Verify commitment if required
+          if (requireCommitments) {
+            if (!commitment) {
+              res.status(400).json({ 
+                error: "Missing commitment", 
+                message: "A commitment transaction is required for vault registration" 
+              });
+              return;
+            }
+            
+            const isValid = await verifyCommitment(commitment, networkId, dbFolder);
+            if (!isValid) {
+              res.status(403).json({
+                error: "Invalid commitment",
+                message: "The commitment transaction does not pay to an authorized address"
+              });
+              return;
+            }
+            logger.info(`Valid commitment verified for vault ${vaultId}`);
           }
 
           // Check if this vault has already been notified and transaction is irreversible
