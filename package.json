@@ -2,9 +2,21 @@
   "name": "@rewindbitcoin/watchtower",
   "version": "1.0.0",
   "type": "commonjs",
-  "scripts": {
-    "build": "tsc"
+  "description": "Monitoring service for RewindBitcoin Wallet that tracks Bitcoin transactions and sends push notifications",
+  "main": "dist/src/index.js",
+  "bin": {
+    "watchtower": "dist/src/index.js"
   },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/src/index.js",
+    "prepublishOnly": "npm run build"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "dependencies": {
     "bitcoinjs-lib": "^6.1.7",
     "commander": "^13.1.0",

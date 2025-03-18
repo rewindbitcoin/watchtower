@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /**
  * Project: Rewind Bitcoin
  * Website: https://rewindbitcoin.com

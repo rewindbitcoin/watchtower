@@ -27,57 +27,68 @@ to the user.
 
 ---
 
-## ⚙️ Setup & Installation
+## ⚙️ Usage
 
-### 1️⃣ Install Dependencies
+### 📱 For Users
+
+You can run the Watchtower API directly using npx without installing it:
 
 ```bash
+npx @rewindbitcoin/watchtower
+```
+
+#### Command Line Options
+
+```bash
+# Run with specific port
+npx @rewindbitcoin/watchtower --port 3000
+
+# Disable specific networks
+npx @rewindbitcoin/watchtower --disable-testnet --disable-tape
+
+# Enable regtest with custom Esplora API URL
+npx @rewindbitcoin/watchtower --enable-regtest http://localhost:3002
+
+# Enable commitment verification
+npx @rewindbitcoin/watchtower --with-commitments
+
+# Specify custom database folder (default is ./db)
+npx @rewindbitcoin/watchtower --db-folder /path/to/database
+
+# Display help information
+npx @rewindbitcoin/watchtower --help
+```
+
+### 💻 For Developers
+
+If you want to modify or contribute to the Watchtower API:
+
+#### 1️⃣ Clone and Install Dependencies
+
+```bash
+git clone https://github.com/rewindbitcoin/watchtower.git
+cd watchtower
 npm install
 ```
 
-### 2️⃣ Run the Watchtower API
-
-Start the server to monitor all networks:
+#### 2️⃣ Development Mode
 
 ```bash
+# Run in development mode
 npx ts-node src/index.ts
 ```
 
-You can disable specific networks:
+#### 3️⃣ Build from Source
 
 ```bash
-npx ts-node src/index.ts --disable-bitcoin --disable-tape
+# Build the project
+npm run build
+
+# Run the built version
+npm start
 ```
 
-Command line options:
-
-```bash
-npx ts-node src/index.ts --port 3000 --disable-testnet --disable-tape
-```
-
-To enable regtest with a custom Esplora API URL:
-
-```bash
-npx ts-node src/index.ts --enable-regtest http://localhost:3002
-```
-
-To enable commitment verification:
-
-```bash
-npx ts-node src/index.ts --with-commitments
-```
-
-To specify a custom database folder (default is ./db):
-
-```bash
-npx ts-node src/index.ts --db-folder /path/to/database
-```
-
-Display help information:
-
-```bash
-npx ts-node src/index.ts --help
-```
+#### Network Monitoring
 
 If no port is specified, a random available port will be used and displayed in
 the console.
@@ -89,6 +100,13 @@ By default, the watchtower monitors these networks:
 - `tape`
 
 The `regtest` network is disabled by default and must be explicitly enabled with a valid Esplora API URL.
+
+#### Publishing (for maintainers)
+
+```bash
+# Build and publish to npm
+npm publish
+```
 
 ---
 
