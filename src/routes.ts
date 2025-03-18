@@ -106,26 +106,41 @@ export function registerRoutes(
             return;
           }
 
-          // Insert notification entry and check if it was actually inserted
-          const result = await db.run(
-            `INSERT OR IGNORE INTO notifications (pushToken, vaultId, status) VALUES (?, ?, 'pending')`,
-            [pushToken, vaultId],
-          );
+          // Use a transaction to ensure atomicity
+          await db.exec("BEGIN TRANSACTION");
 
-          // If changes === 0, the entry already existed, so skip processing txids
-          if (result.changes || 0 > 0) {
-            // Process each transaction ID only if this is a new notification
-            for (const txid of triggerTxIds) {
-              // Insert transaction if it doesn't exist yet
-              await db.run(
-                "INSERT OR IGNORE INTO vault_txids (txid, vaultId, status) VALUES (?, ?, 'unchecked')",
-                [txid, vaultId],
+          try {
+            // Insert notification entry and check if it was actually inserted
+            const result = await db.run(
+              `INSERT OR IGNORE INTO notifications (pushToken, vaultId, status) VALUES (?, ?, 'pending')`,
+              [pushToken, vaultId],
+            );
+
+            // If changes === 0, the entry already existed, so skip processing txids
+            if (result.changes || 0 > 0) {
+              // Process each transaction ID only if this is a new notification
+              for (const txid of triggerTxIds) {
+                // Insert transaction if it doesn't exist yet
+                await db.run(
+                  "INSERT OR IGNORE INTO vault_txids (txid, vaultId, status) VALUES (?, ?, 'unchecked')",
+                  [txid, vaultId],
+                );
+              }
+              logger.info(
+                `Registered vault ${vaultId} with ${triggerTxIds.length} trigger transactions`,
+              );
+            } else {
+              logger.info(
+                `Notification for vault ${vaultId} and push token ${pushToken} already exists, skipping txid processing`,
               );
             }
-          } else {
-            logger.info(
-              `Notification for vault ${vaultId} and push token ${pushToken} already exists, skipping txid processing`,
-            );
+
+            // Commit the transaction
+            await db.exec("COMMIT");
+          } catch (error) {
+            // Rollback the transaction if any error occurs
+            await db.exec("ROLLBACK");
+            throw error;
           }
         }
         res.sendStatus(200);
