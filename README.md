@@ -211,7 +211,10 @@ vault is accessed.
   "to": "ExponentPushToken[xyz]",
   "title": "Vault Access Alert!",
   "body": "Your vault vault123 is being accessed!",
-  "data": { "vaultId": "vault123" }
+  "data": { 
+    "vaultId": "vault123",
+    "txid": "abcdef1234567890abcdef1234567890"
+  }
 }
 ```
 

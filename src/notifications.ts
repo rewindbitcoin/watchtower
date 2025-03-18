@@ -17,11 +17,16 @@ import { createLogger } from "./logger";
 // Create logger for this module
 const logger = createLogger("Notifications");
 
+export interface NotificationData {
+  vaultId: string;
+  txid: string;
+}
+
 export interface NotificationPayload {
   to: string;
   title: string;
   body: string;
-  data?: any;
+  data?: NotificationData;
 }
 
 export async function sendPushNotification(
