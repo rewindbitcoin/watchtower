@@ -178,6 +178,7 @@ This table is stored in a separate database file (`{networkId}.sqlite`) and is m
   ```
 
 - **Commitment Verification:**
+
   - When enabled with `--with-commitments` flag, each vault registration requires a valid commitment
   - The `commitment` field contains a hex-encoded Bitcoin transaction
   - This transaction must pay to at least one authorized address
@@ -208,6 +209,7 @@ The Watchtower uses an efficient monitoring strategy to minimize API calls:
    IRREVERSIBLE_THRESHOLD) if starting fresh.
 
 2. **For each monitoring cycle:**
+
    - Get all new blocks since the last checked height
    - Check if any pending transactions appear in these blocks
    - Send notifications to all devices for found transactions
@@ -237,7 +239,7 @@ vault is accessed.
   "to": "ExponentPushToken[xyz]",
   "title": "Vault Access Alert!",
   "body": "Your vault vault123 in wallet 'My Bitcoin Wallet' is being accessed!",
-  "data": { 
+  "data": {
     "vaultId": "vault123",
     "walletName": "My Bitcoin Wallet",
     "txid": "abcdef1234567890abcdef1234567890"
