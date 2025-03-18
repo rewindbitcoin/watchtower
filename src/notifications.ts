@@ -49,7 +49,22 @@ export async function sendPushNotification(
     }
 
     const result = await response.json();
-    logger.info("Push notification sent:", result);
+    
+    // Check for errors in the response data
+    // Expo API returns 200 OK even when there are errors in the push notification
+    if (result.data?.status === 'error') {
+      logger.error(`Push notification failed:`, {
+        error: result.data.message,
+        details: result.data.details,
+        recipient: payload.to
+      });
+      return false;
+    }
+    
+    logger.info("Push notification sent successfully", {
+      recipient: payload.to,
+      vaultId: payload.data?.vaultId
+    });
     return true;
   } catch (error) {
     logger.error("Error sending push notification:", error);
