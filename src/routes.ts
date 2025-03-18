@@ -59,15 +59,20 @@ export function registerRoutes(
         // Insert or update each vault and its transaction ids.
         for (const vault of vaults) {
           const { vaultId, triggerTxIds, commitment, vaultNumber } = vault;
-          if (
-            !vaultId ||
-            !Array.isArray(triggerTxIds) ||
-            !Number.isInteger(vaultNumber) || // Ensures it's an integer
-            vaultNumber < 0
-          ) {
+          if (!vaultId || !Array.isArray(triggerTxIds)) {
+            logger.error(`Invalid vault data: missing vaultId or triggerTxIds`, { vaultId, triggerTxIds });
             res.status(400).json({
               error:
                 "Invalid vault data. vaultId, vaultNumber, and triggerTxIds array are required",
+            });
+            return;
+          }
+          
+          // Validate vaultNumber is a non-negative integer
+          if (vaultNumber === undefined || !Number.isInteger(vaultNumber) || vaultNumber < 0) {
+            logger.error(`Invalid vaultNumber: ${vaultNumber}`, { vaultId });
+            res.status(400).json({
+              error: "Invalid vaultNumber. Must be a non-negative integer",
             });
             return;
           }
@@ -75,6 +80,7 @@ export function registerRoutes(
           // Verify commitment if required
           if (requireCommitments) {
             if (!commitment) {
+              logger.error(`Missing commitment for vault ${vaultId}`);
               res.status(400).json({
                 error: "Missing commitment",
                 message:
@@ -110,6 +116,11 @@ export function registerRoutes(
           );
 
           if (existingNotification) {
+            logger.warn(`Attempt to register already accessed vault ${vaultId}`, { 
+              pushToken, 
+              walletName,
+              vaultNumber 
+            });
             res.status(409).json({
               error: "Vault already accessed",
               message: `Vault ${vaultId} has already been accessed and cannot be registered again.`,
@@ -129,20 +140,33 @@ export function registerRoutes(
 
             // If changes === 0, the entry already existed, so skip processing txids
             if (result.changes || 0 > 0) {
+              logger.info(`New device registered for vault ${vaultId}`, {
+                pushToken,
+                walletName,
+                vaultNumber
+              });
+              
               // Process each transaction ID only if this is a new notification
+              let txidsAdded = 0;
               for (const txid of triggerTxIds) {
                 // Insert transaction if it doesn't exist yet
-                await db.run(
+                const txResult = await db.run(
                   "INSERT OR IGNORE INTO vault_txids (txid, vaultId, status) VALUES (?, ?, 'unchecked')",
                   [txid, vaultId],
                 );
+                if (txResult.changes && txResult.changes > 0) {
+                  txidsAdded++;
+                }
               }
+              
               logger.info(
-                `Registered vault ${vaultId} with ${triggerTxIds.length} trigger transactions`,
+                `Registered vault ${vaultId} with ${triggerTxIds.length} trigger transactions (${txidsAdded} new)`,
+                { walletName, vaultNumber }
               );
             } else {
               logger.info(
                 `Notification for vault ${vaultId} and push token ${pushToken} already exists, skipping txid processing`,
+                { walletName, vaultNumber }
               );
             }
 
@@ -151,13 +175,25 @@ export function registerRoutes(
           } catch (error) {
             // Rollback the transaction if any error occurs
             await db.exec("ROLLBACK");
+            logger.error(`Database transaction failed for vault ${vaultId}`, { 
+              error: error instanceof Error ? error.message : String(error),
+              walletName,
+              vaultNumber
+            });
             throw error;
           }
         }
+        logger.info(`Successfully registered ${vaults.length} vaults for wallet "${walletName}"`);
         res.sendStatus(200);
         return;
       } catch (err: any) {
-        logger.error("Error in /register:", err);
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        logger.error(`Error in /${networkId}/register:`, { 
+          error: errorMessage,
+          stack: err instanceof Error ? err.stack : undefined,
+          walletName,
+          pushToken: pushToken ? pushToken.substring(0, 10) + '...' : undefined
+        });
         res.status(500).json({ error: "Internal server error" });
         return;
       }
