@@ -29,6 +29,10 @@ const logger = createLogger("Monitor");
 // Number of blocks to check for reorgs
 const IRREVERSIBLE_THRESHOLD = 4;
 
+// Maximum time to retry push notifications (in milliseconds)
+// Default: 3 days = 3 * 24 * 60 * 60 * 1000 = 259200000 ms
+const MAX_NOTIFICATION_RETRY_MS = 3 * 24 * 60 * 60 * 1000;
+
 // In-memory cache of block transactions to avoid redundant network calls
 // Structure: { networkId: { blockHash: string[] } }
 const blockTxidsCache: Record<string, Record<string, string[]>> = {
@@ -81,12 +85,31 @@ async function sendNotifications(networkId: string) {
   const db = getDb(networkId);
 
   // Get all notifications that need to be sent
+  // Only include notifications that haven't exceeded the retry period
+  const maxRetryTime = Math.floor((Date.now() - MAX_NOTIFICATION_RETRY_MS) / 1000);
+  
   const notificationsToSend = await db.all(`
-    SELECT n.pushToken, n.vaultId, vt.txid, vt.status
+    SELECT n.pushToken, n.vaultId, vt.txid, vt.status, n.firstAttemptAt
     FROM notifications n
     JOIN vault_txids vt ON n.vaultId = vt.vaultId
-    WHERE n.status = 'pending' AND (vt.status = 'reversible' OR vt.status = 'irreversible')
-  `);
+    WHERE n.status = 'pending' 
+      AND (vt.status = 'reversible' OR vt.status = 'irreversible')
+      AND (n.firstAttemptAt > ? OR n.firstAttemptAt IS NULL)
+  `, [maxRetryTime]);
+  
+  // Log any notifications that have exceeded the retry period
+  const expiredCount = await db.get(`
+    SELECT COUNT(*) as count
+    FROM notifications n
+    JOIN vault_txids vt ON n.vaultId = vt.vaultId
+    WHERE n.status = 'pending' 
+      AND (vt.status = 'reversible' OR vt.status = 'irreversible')
+      AND n.firstAttemptAt <= ?
+  `, [maxRetryTime]);
+  
+  if (expiredCount && expiredCount.count > 0) {
+    logger.info(`Skipping ${expiredCount.count} notifications that exceeded the ${MAX_NOTIFICATION_RETRY_MS/86400000}-day retry period`);
+  }
 
   for (const notification of notificationsToSend) {
     try {
@@ -296,10 +319,11 @@ async function monitorTransactions(networkId: string): Promise<void> {
 
           // Reset notifications for this transaction's vaultId back to pending
           // so they can be sent again if the transaction reappears
+          // Also reset the firstAttemptAt timestamp
           await db.run(
             `
               UPDATE notifications 
-              SET status = 'pending' 
+              SET status = 'pending', firstAttemptAt = strftime('%s','now')
               WHERE vaultId IN (
                 SELECT vaultId FROM vault_txids WHERE txid = ?
               )

@@ -124,6 +124,7 @@ The Watchtower API uses **SQLite** with the following structure:
 | `walletName` | TEXT | Name of the wallet containing the vault |
 | `vaultNumber` | INTEGER | The nth vault created in the wallet (0-based) |
 | `status` | TEXT | Status: 'pending' (not sent yet) or 'sent' |
+| `firstAttemptAt` | INTEGER | Unix timestamp of first notification attempt |
 
 **Vault Transactions Table:**
 | Column | Type | Description |
