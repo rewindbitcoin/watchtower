@@ -45,9 +45,9 @@ export function registerRoutes(
           return;
         }
 
-        const { pushToken, vaults } = req.body;
-        if (!pushToken || !Array.isArray(vaults)) {
-          res.status(400).json({ error: "Invalid input data" });
+        const { pushToken, vaults, walletName } = req.body;
+        if (!pushToken || !Array.isArray(vaults) || !walletName) {
+          res.status(400).json({ error: "Invalid input data. pushToken, walletName, and vaults array are required" });
           return;
         }
 
@@ -112,8 +112,8 @@ export function registerRoutes(
           try {
             // Insert notification entry and check if it was actually inserted
             const result = await db.run(
-              `INSERT OR IGNORE INTO notifications (pushToken, vaultId, status) VALUES (?, ?, 'pending')`,
-              [pushToken, vaultId],
+              `INSERT OR IGNORE INTO notifications (pushToken, vaultId, walletName, status) VALUES (?, ?, ?, 'pending')`,
+              [pushToken, vaultId, walletName],
             );
 
             // If changes === 0, the entry already existed, so skip processing txids

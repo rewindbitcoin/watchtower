@@ -119,6 +119,7 @@ The Watchtower API uses **SQLite** with the following structure:
 |----------|------|-------------|
 | `pushToken` | TEXT | Device push notification token |
 | `vaultId` | TEXT | Associated vault ID |
+| `walletName` | TEXT | Name of the wallet containing the vault |
 | `status` | TEXT | Status: 'pending' (notification not sent yet) or 'sent' (notification already sent) |
 
 **Vault Transactions Table:**
@@ -159,6 +160,7 @@ This table is stored in a separate database file (`{networkId}.sqlite`) and is m
   ```json
   {
     "pushToken": "ExponentPushToken[xyz]",
+    "walletName": "My Bitcoin Wallet",
     "vaults": [
       {
         "vaultId": "vault123",
@@ -228,9 +230,10 @@ vault is accessed.
 {
   "to": "ExponentPushToken[xyz]",
   "title": "Vault Access Alert!",
-  "body": "Your vault vault123 is being accessed!",
+  "body": "Your vault vault123 in wallet 'My Bitcoin Wallet' is being accessed!",
   "data": { 
     "vaultId": "vault123",
+    "walletName": "My Bitcoin Wallet",
     "txid": "abcdef1234567890abcdef1234567890"
   }
 }
