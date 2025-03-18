@@ -164,7 +164,7 @@ export function registerRoutes(
                 );
 
               logger.info(
-                `Registered vault ${vaultId} with ${triggerTxIds.length} trigger transactions (${triggerTxIds.length} new)`,
+                `Registered vault ${vaultId} with ${triggerTxIds.length} trigger transactions`,
                 { walletName, vaultNumber },
               );
             } else {
