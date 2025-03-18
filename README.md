@@ -100,7 +100,8 @@ By default, the watchtower monitors these networks:
 - `testnet`
 - `tape`
 
-The `regtest` network is disabled by default and must be explicitly enabled with a valid Esplora API URL.
+The `regtest` network is disabled by default and must be explicitly enabled with
+a valid Esplora API URL.
 
 #### Publishing (for maintainers)
 
@@ -128,7 +129,7 @@ The Watchtower API uses **SQLite** with the following structure:
 |--------|------|-------------|
 | `txid` | TEXT | Primary Key - Transaction ID to monitor |
 | `vaultId` | TEXT | Associated vault ID |
-| `status` | TEXT | Status: 'unchecked', 'unseen', 'reversible', or 'irreversible' |
+| `status` | TEXT | Status: 'unchecked', 'unseen', 'reversible', 'irreversible' |
 
 **Network State Table:**
 | Column | Type | Description |
@@ -139,10 +140,12 @@ The Watchtower API uses **SQLite** with the following structure:
 **Authorized Addresses Table (in separate database):**
 | Column | Type | Description |
 |--------|------|-------------|
-| `address` | TEXT | Primary Key - Bitcoin address authorized to use the service |
+| `address` | TEXT | Primary Key - Btc address authorized to use the service |
 | `created_at` | TIMESTAMP | When the address was added to the database |
 
-This table is stored in a separate database file (`{networkId}.sqlite`) and is managed by another process. The watchtower only reads from this database when commitment verification is enabled.
+This table is stored in a separate database file (`{networkId}.sqlite`) and is
+managed by another process. The watchtower only reads from this database when
+commitment verification is enabled.
 
 ---
 
@@ -180,7 +183,7 @@ This table is stored in a separate database file (`{networkId}.sqlite`) and is m
 
 - **Commitment Verification:**
 
-  - When enabled with `--with-commitments` flag, each vault registration 
+  - When enabled with `--with-commitments` flag, each vault registration
     requires a valid commitment
   - The `commitment` field contains a hex-encoded Bitcoin transaction
   - This transaction must pay to at least one authorized address

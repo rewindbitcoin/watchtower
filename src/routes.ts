@@ -47,7 +47,12 @@ export function registerRoutes(
 
         const { pushToken, vaults } = req.body;
         if (!pushToken || !Array.isArray(vaults)) {
-          res.status(400).json({ error: "Invalid input data. pushToken and vaults array are required" });
+          res
+            .status(400)
+            .json({
+              error:
+                "Invalid input data. pushToken and vaults array are required",
+            });
           return;
         }
 
@@ -57,7 +62,12 @@ export function registerRoutes(
         for (const vault of vaults) {
           const { vaultId, triggerTxIds, commitment, walletName } = vault;
           if (!vaultId || !Array.isArray(triggerTxIds) || !walletName) {
-            res.status(400).json({ error: "Invalid vault data. vaultId, walletName, and triggerTxIds array are required" });
+            res
+              .status(400)
+              .json({
+                error:
+                  "Invalid vault data. vaultId, walletName, and triggerTxIds array are required",
+              });
             return;
           }
 
