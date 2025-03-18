@@ -310,11 +310,11 @@ async function monitorTransactions(networkId: string): Promise<void> {
 
           // Reset notifications for this transaction's vaultId back to pending
           // so they can be sent again if the transaction reappears
-          // Also reset the firstAttemptAt timestamp
+          // Set firstAttemptAt to NULL so it will get a fresh timestamp when the transaction reappears
           await db.run(
             `
               UPDATE notifications 
-              SET status = 'pending', firstAttemptAt = strftime('%s','now')
+              SET status = 'pending', firstAttemptAt = NULL
               WHERE vaultId IN (
                 SELECT vaultId FROM vault_txids WHERE txid = ?
               )
