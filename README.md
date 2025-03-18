@@ -35,38 +35,42 @@ to the user.
 npm install
 ```
 
-### 2️⃣ Create Database Directory
-
-Create a directory to store the database files:
-
-```bash
-mkdir -p ./db
-```
-
-### 3️⃣ Run the Watchtower API
+### 2️⃣ Run the Watchtower API
 
 Start the server to monitor all networks:
 
 ```bash
-npx ts-node src/index.ts --db-folder ./db
+npx ts-node src/index.ts
 ```
 
 You can disable specific networks:
 
 ```bash
-npx ts-node src/index.ts --db-folder ./db --disable-bitcoin --disable-tape
+npx ts-node src/index.ts --disable-bitcoin --disable-tape
 ```
 
 Command line options:
 
 ```bash
-npx ts-node src/index.ts --db-folder ./db --port 3000 --disable-testnet --disable-tape
+npx ts-node src/index.ts --port 3000 --disable-testnet --disable-tape
 ```
 
 To enable regtest with a custom Esplora API URL:
 
 ```bash
-npx ts-node src/index.ts --db-folder ./db --enable-regtest http://localhost:3002
+npx ts-node src/index.ts --enable-regtest http://localhost:3002
+```
+
+To enable commitment verification:
+
+```bash
+npx ts-node src/index.ts --with-commitments
+```
+
+To specify a custom database folder (default is ./db):
+
+```bash
+npx ts-node src/index.ts --db-folder /path/to/database
 ```
 
 Display help information:
@@ -112,6 +116,14 @@ The Watchtower API uses **SQLite** with the following structure:
 | `id` | INTEGER | Primary Key (always 1) |
 | `last_checked_height` | INTEGER | Last block height that was checked |
 
+**Authorized Addresses Table (in separate database):**
+| Column | Type | Description |
+|--------|------|-------------|
+| `address` | TEXT | Primary Key - Bitcoin address authorized to use the service |
+| `created_at` | TIMESTAMP | When the address was added to the database |
+
+This table is stored in a separate database file (`{networkId}.sqlite`) and is managed by another process. The watchtower only reads from this database when commitment verification is enabled.
+
 ---
 
 ## 📡 API Endpoints
@@ -132,13 +144,25 @@ The Watchtower API uses **SQLite** with the following structure:
     "vaults": [
       {
         "vaultId": "vault123",
-        "triggerTxIds": ["txid1", "txid2"]
+        "triggerTxIds": ["txid1", "txid2"],
+        "commitment": "0200000001abcdef..." // Optional, required when --with-commitments is enabled
       }
     ]
   }
   ```
 
-- **Response:** `200 OK` on success.
+- **Commitment Verification:**
+  - When enabled with `--with-commitments` flag, each vault registration requires a valid commitment
+  - The `commitment` field contains a hex-encoded Bitcoin transaction
+  - This transaction must pay to at least one authorized address
+  - Authorized addresses are stored in a separate database (`{networkId}.sqlite`)
+  - This prevents spam registrations by requiring a payment to use the service
+
+- **Responses:**
+  - `200 OK`: Registration successful
+  - `400 Bad Request`: Invalid input data or commitment transaction
+  - `403 Forbidden`: Commitment transaction doesn't pay to an authorized address
+  - `409 Conflict`: Vault has already been accessed and cannot be registered again
 
 ### **2️⃣ Health Check**
 
