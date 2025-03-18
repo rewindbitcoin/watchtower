@@ -160,12 +160,18 @@ This table is stored in a separate database file (`{networkId}.sqlite`) and is m
   ```json
   {
     "pushToken": "ExponentPushToken[xyz]",
-    "walletName": "My Bitcoin Wallet",
     "vaults": [
       {
         "vaultId": "vault123",
+        "walletName": "My Bitcoin Wallet",
         "triggerTxIds": ["txid1", "txid2"],
         "commitment": "0200000001abcdef..." // Optional, required when --with-commitments is enabled
+      },
+      {
+        "vaultId": "vault456",
+        "walletName": "My Other Wallet",
+        "triggerTxIds": ["txid3", "txid4"],
+        "commitment": "0200000001ghijkl..." // Optional
       }
     ]
   }
