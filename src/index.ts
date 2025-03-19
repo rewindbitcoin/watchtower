@@ -208,15 +208,28 @@ const server = app.listen(port, async () => {
       logger.error("Error closing database connections:", err);
       process.exit(1);
     }
-
-    // Force exit after timeout if graceful shutdown fails
-    setTimeout(() => {
-      logger.error("Forced shutdown after timeout!");
-      process.exit(1);
-    }, 10000);
   };
 
   // Handle termination signals
-  process.on("SIGINT", () => shutdown("SIGINT")); // CTRL+C
-  process.on("SIGTERM", () => shutdown("SIGTERM")); // kill
+  process.on("SIGINT", () => {
+    // Set a timeout to force exit if graceful shutdown fails
+    const forceExitTimeout = setTimeout(() => {
+      logger.error("Forced shutdown after timeout!");
+      process.exit(1);
+    }, 10000);
+    
+    // Start graceful shutdown
+    shutdown("SIGINT").finally(() => clearTimeout(forceExitTimeout));
+  });
+  
+  process.on("SIGTERM", () => {
+    // Set a timeout to force exit if graceful shutdown fails
+    const forceExitTimeout = setTimeout(() => {
+      logger.error("Forced shutdown after timeout!");
+      process.exit(1);
+    }, 10000);
+    
+    // Start graceful shutdown
+    shutdown("SIGTERM").finally(() => clearTimeout(forceExitTimeout));
+  });
 });
