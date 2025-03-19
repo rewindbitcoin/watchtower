@@ -212,23 +212,23 @@ const server = app.listen(port, async () => {
 
   // Handle termination signals
   process.on("SIGINT", () => {
-    // Set a timeout to force exit if graceful shutdown fails
+    // Set a 1 minute grace timeout to force exit if graceful shutdown fails
     const forceExitTimeout = setTimeout(() => {
       logger.error("Forced shutdown after timeout!");
       process.exit(1);
-    }, 10000);
-    
+    }, 60000);
+
     // Start graceful shutdown
     shutdown("SIGINT").finally(() => clearTimeout(forceExitTimeout));
   });
-  
+
   process.on("SIGTERM", () => {
-    // Set a timeout to force exit if graceful shutdown fails
+    // Set a 1 minute grace timeout to force exit if graceful shutdown fails
     const forceExitTimeout = setTimeout(() => {
       logger.error("Forced shutdown after timeout!");
       process.exit(1);
-    }, 10000);
-    
+    }, 60000);
+
     // Start graceful shutdown
     shutdown("SIGTERM").finally(() => clearTimeout(forceExitTimeout));
   });
