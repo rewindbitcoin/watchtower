@@ -9,7 +9,9 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "strictNullChecks": true,
+    "exactOptionalPropertyTypes": true,
     "noImplicitAny": true,
+    "useUnknownInCatchVariables": true,
     "forceConsistentCasingInFileNames": true
   },
   "include": ["./**/*.ts"],

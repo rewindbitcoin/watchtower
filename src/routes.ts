@@ -192,7 +192,7 @@ export function registerRoutes(
         );
         res.sendStatus(200);
         return;
-      } catch (err: any) {
+      } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : String(err);
         logger.error(`Error in /${networkId}/watchtower/register:`, {
           error: errorMessage,
