@@ -62,7 +62,7 @@ const requireCommitments = process.argv.includes("--with-commitments");
 // Get port value (next argument after --port)
 const port =
   portIndex !== -1 && portIndex < process.argv.length - 1
-    ? parseInt(process.argv[portIndex + 1], 10)
+    ? parseInt(process.argv[portIndex + 1] || "0", 10)
     : 0; // Use 0 for random port assignment
 
 // Get database folder (next argument after --db-folder) or default to ./db
@@ -70,6 +70,7 @@ const dbFolder =
   dbFolderIndex !== -1 && dbFolderIndex < process.argv.length - 1
     ? process.argv[dbFolderIndex + 1]
     : "./db";
+if (dbFolder === undefined) throw new Error("undefined db-folder");
 
 // Get regtest API URL (next argument after --enable-regtest)
 const regtestApiUrl =
