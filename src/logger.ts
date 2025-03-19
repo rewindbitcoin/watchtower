@@ -44,7 +44,7 @@ export class Logger {
   /**
    * Format a log message with timestamp and context
    */
-  private formatMessage(level: LogLevel, message: string, data?: any): string {
+  private formatMessage(level: LogLevel, message: string, data?: unknown): string {
     const timestamp = this.formatTimestamp(new Date());
     let formattedMessage = `[${timestamp}] [${level.toUpperCase()}] [${this.context}] ${message}`;
 
@@ -65,19 +65,19 @@ export class Logger {
     return formattedMessage;
   }
 
-  debug(message: string, data?: any): void {
+  debug(message: string, data?: unknown): void {
     console.debug(this.formatMessage("debug", message, data));
   }
 
-  info(message: string, data?: any): void {
+  info(message: string, data?: unknown): void {
     console.log(this.formatMessage("info", message, data));
   }
 
-  warn(message: string, data?: any): void {
+  warn(message: string, data?: unknown): void {
     console.warn(this.formatMessage("warn", message, data));
   }
 
-  error(message: string, data?: any): void {
+  error(message: string, data?: unknown): void {
     console.error(this.formatMessage("error", message, data));
   }
 
