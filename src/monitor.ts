@@ -53,6 +53,9 @@ async function getCachedBlockTxids(
   blockHash: string,
   networkId: string,
 ): Promise<string[]> {
+  if (!blockTxidsCache[networkId])
+    throw new Error(`Block txids cache for ${networkId} is undefined`);
+
   // Check if we have this block's transactions in cache
   if (blockTxidsCache[networkId][blockHash]) {
     return blockTxidsCache[networkId][blockHash];
