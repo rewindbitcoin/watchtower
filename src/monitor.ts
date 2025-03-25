@@ -56,19 +56,19 @@ async function apiCallWithRetry<T>(
   apiCall: () => Promise<T>,
   retries = 3,
   delayMs = 500,
-  apiKey = 'default' // Use a key to track different API endpoints
+  apiKey = "default", // Use a key to track different API endpoints
 ): Promise<T> {
   // Enforce minimum delay between calls to the same API endpoint
   const now = Date.now();
   const lastCallTime = lastApiCallTime[apiKey] || 0;
   const timeSinceLastCall = now - lastCallTime;
-  
+
   if (timeSinceLastCall < delayMs) {
     // Wait for the remaining time to reach minimum delay
     const waitTime = delayMs - timeSinceLastCall;
     await sleep(waitTime);
   }
-  
+
   let lastError;
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
@@ -76,14 +76,17 @@ async function apiCallWithRetry<T>(
       if (attempt > 0) {
         await sleep(delayMs * attempt); // Increasing delay for each retry
       }
-      
+
       // Update the last call time before making the call
       lastApiCallTime[apiKey] = Date.now();
-      
+
       return await apiCall();
     } catch (error) {
       lastError = error;
-      logger.warn(`API call failed (attempt ${attempt + 1}/${retries}):`, error);
+      logger.warn(
+        `API call failed (attempt ${attempt + 1}/${retries}):`,
+        error,
+      );
     }
   }
   throw lastError;
@@ -110,7 +113,7 @@ async function getCachedBlockTxids(
     () => getBlockTxids(blockHash, networkId),
     3,
     500,
-    `${networkId}-getBlockTxids`
+    networkId,
   );
 
   // Add to cache
@@ -231,9 +234,9 @@ async function monitorTransactions(networkId: string): Promise<void> {
         () => getLatestBlockHeight(networkId),
         3,
         500,
-        `${networkId}-getLatestBlockHeight`
+        networkId,
       ),
-      10
+      10,
     );
 
     if (!lastCheckedHeight) {
@@ -268,14 +271,14 @@ async function monitorTransactions(networkId: string): Promise<void> {
       () => getMempoolTxids(networkId),
       3,
       500,
-      `${networkId}-getMempoolTxids`
+      networkId,
     );
     for (const tx of uncheckedTxs) {
       const txStatus = await apiCallWithRetry(
         () => getTxStatus(tx.txid, networkId),
         3,
         500,
-        `${networkId}-getTxStatus`
+        networkId,
       );
 
       if (txStatus.confirmed || mempoolTxids.includes(tx.txid)) {
@@ -321,12 +324,11 @@ async function monitorTransactions(networkId: string): Promise<void> {
         height <= currentHeight;
         height++
       ) {
-        
         const blockHash = await apiCallWithRetry(
           () => getBlockHashByHeight(height, networkId),
           3,
           500,
-          `${networkId}-getBlockHashByHeight`
+          networkId,
         );
 
         // Get block transactions (from cache if available)
