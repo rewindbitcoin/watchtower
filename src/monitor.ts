@@ -365,14 +365,14 @@ async function monitorTransactions(networkId: string): Promise<void> {
 function createInterruptibleSleep() {
   let timeoutId: NodeJS.Timeout | null = null;
   let resolvePromise: (() => void) | null = null;
-  
+
   const sleep = (ms: number): Promise<void> => {
     return new Promise<void>((resolve) => {
       resolvePromise = resolve;
       timeoutId = setTimeout(resolve, ms);
     });
   };
-  
+
   const interrupt = () => {
     if (timeoutId) {
       clearTimeout(timeoutId);
@@ -383,7 +383,7 @@ function createInterruptibleSleep() {
       resolvePromise = null;
     }
   };
-  
+
   return { sleep, interrupt };
 }
 
@@ -438,7 +438,7 @@ export function startMonitoring(networkId: string, intervalMs = 60000) {
     logger.info(
       `Stopping monitoring for ${networkId}. Waiting for current cycle to complete...`,
     );
-    
+
     // Interrupt any ongoing sleep to exit immediately
     interrupt();
 
