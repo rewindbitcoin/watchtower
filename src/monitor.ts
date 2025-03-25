@@ -45,21 +45,41 @@ const blockTxidsCache: Record<string, Record<string, string[]>> = {
 // Maximum number of blocks to keep in the cache per network
 const MAX_CACHED_BLOCKS = IRREVERSIBLE_THRESHOLD * 2;
 
+// Track last API call time for rate limiting
+const lastApiCallTime: Record<string, number> = {};
+
 /**
  * Helper function to make API calls with retry and delay
+ * Includes rate limiting to prevent "Too Many Requests" errors
  */
 async function apiCallWithRetry<T>(
   apiCall: () => Promise<T>,
   retries = 3,
-  delayMs = 500
+  delayMs = 500,
+  apiKey = 'default' // Use a key to track different API endpoints
 ): Promise<T> {
+  // Enforce minimum delay between calls to the same API endpoint
+  const now = Date.now();
+  const lastCallTime = lastApiCallTime[apiKey] || 0;
+  const timeSinceLastCall = now - lastCallTime;
+  
+  if (timeSinceLastCall < delayMs) {
+    // Wait for the remaining time to reach minimum delay
+    const waitTime = delayMs - timeSinceLastCall;
+    await sleep(waitTime);
+  }
+  
   let lastError;
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
-      // Add delay between attempts (except for first attempt)
+      // Add delay between retry attempts (except for first attempt)
       if (attempt > 0) {
         await sleep(delayMs * attempt); // Increasing delay for each retry
       }
+      
+      // Update the last call time before making the call
+      lastApiCallTime[apiKey] = Date.now();
+      
       return await apiCall();
     } catch (error) {
       lastError = error;
@@ -86,7 +106,12 @@ async function getCachedBlockTxids(
   }
 
   // Not in cache, fetch from network with retry
-  const blockTxids = await apiCallWithRetry(() => getBlockTxids(blockHash, networkId));
+  const blockTxids = await apiCallWithRetry(
+    () => getBlockTxids(blockHash, networkId),
+    3,
+    500,
+    `${networkId}-getBlockTxids`
+  );
 
   // Add to cache
   blockTxidsCache[networkId][blockHash] = blockTxids;
@@ -202,7 +227,12 @@ async function monitorTransactions(networkId: string): Promise<void> {
 
     const lastCheckedHeight = state?.last_checked_height || 0;
     const currentHeight = parseInt(
-      await apiCallWithRetry(() => getLatestBlockHeight(networkId)),
+      await apiCallWithRetry(
+        () => getLatestBlockHeight(networkId),
+        3,
+        500,
+        `${networkId}-getLatestBlockHeight`
+      ),
       10
     );
 
@@ -234,9 +264,19 @@ async function monitorTransactions(networkId: string): Promise<void> {
         `Checking status of ${uncheckedTxs.length} unchecked transactions on ${networkId} network`,
       );
     }
-    const mempoolTxids = await apiCallWithRetry(() => getMempoolTxids(networkId));
+    const mempoolTxids = await apiCallWithRetry(
+      () => getMempoolTxids(networkId),
+      3,
+      500,
+      `${networkId}-getMempoolTxids`
+    );
     for (const tx of uncheckedTxs) {
-      const txStatus = await apiCallWithRetry(() => getTxStatus(tx.txid, networkId));
+      const txStatus = await apiCallWithRetry(
+        () => getTxStatus(tx.txid, networkId),
+        3,
+        500,
+        `${networkId}-getTxStatus`
+      );
 
       if (txStatus.confirmed || mempoolTxids.includes(tx.txid)) {
         // Transaction is confirmed in a block
