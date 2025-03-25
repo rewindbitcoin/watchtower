@@ -76,7 +76,10 @@ export function registerRoutes(
             !Number.isInteger(vaultNumber) ||
             vaultNumber < 0
           ) {
-            logger.error(`Invalid vaultNumber for ${networkId} network: ${vaultNumber}`, { vaultId });
+            logger.error(
+              `Invalid vaultNumber for ${networkId} network: ${vaultNumber}`,
+              { vaultId },
+            );
             res.status(400).json({
               error: "Invalid vaultNumber. Must be a non-negative integer",
             });
@@ -86,7 +89,9 @@ export function registerRoutes(
           // Verify commitment if required
           if (requireCommitments) {
             if (!commitment) {
-              logger.error(`Missing commitment for vault ${vaultId} on ${networkId} network`);
+              logger.error(
+                `Missing commitment for vault ${vaultId} on ${networkId} network`,
+              );
               res.status(400).json({
                 error: "Missing commitment",
                 message:
@@ -108,7 +113,9 @@ export function registerRoutes(
               });
               return;
             }
-            logger.info(`Valid commitment verified for vault ${vaultId} on ${networkId} network`);
+            logger.info(
+              `Valid commitment verified for vault ${vaultId} on ${networkId} network`,
+            );
           }
 
           // Check if this vault has already been notified and transaction is irreversible
@@ -149,11 +156,14 @@ export function registerRoutes(
 
             // If changes === 0, the entry already existed, so skip processing txids
             if (result.changes || 0 > 0) {
-              logger.info(`New device registered for vault ${vaultId} on ${networkId} network`, {
-                pushToken,
-                walletName,
-                vaultNumber,
-              });
+              logger.info(
+                `New device registered for vault ${vaultId} on ${networkId} network`,
+                {
+                  pushToken,
+                  walletName,
+                  vaultNumber,
+                },
+              );
 
               // Process each transaction ID only if this is a new notification
               // Insert transaction if it doesn't exist yet
@@ -179,11 +189,14 @@ export function registerRoutes(
           } catch (error) {
             // Rollback the transaction if any error occurs
             await db.exec("ROLLBACK");
-            logger.error(`Database transaction failed for vault ${vaultId} on ${networkId} network`, {
-              error: error instanceof Error ? error.message : String(error),
-              walletName,
-              vaultNumber,
-            });
+            logger.error(
+              `Database transaction failed for vault ${vaultId} on ${networkId} network`,
+              {
+                error: error instanceof Error ? error.message : String(error),
+                walletName,
+                vaultNumber,
+              },
+            );
             throw error;
           }
         }
