@@ -322,8 +322,11 @@ async function monitorTransactions(networkId: string): Promise<void> {
         height++
       ) {
         
-        const blockHash = await apiCallWithRetry(() => 
-          getBlockHashByHeight(height, networkId)
+        const blockHash = await apiCallWithRetry(
+          () => getBlockHashByHeight(height, networkId),
+          3,
+          500,
+          `${networkId}-getBlockHashByHeight`
         );
 
         // Get block transactions (from cache if available)
