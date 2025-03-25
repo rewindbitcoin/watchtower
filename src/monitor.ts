@@ -54,13 +54,13 @@ const lastApiCallTime: Record<string, number> = {};
  */
 async function apiCallWithRetry<T>(
   apiCall: () => Promise<T>,
+  networkId: string = "default", // Track rate limiting per network
   retries = 3,
-  delayMs = 500,
-  apiKey = "default", // Use a key to track different API endpoints
+  delayMs = 500
 ): Promise<T> {
-  // Enforce minimum delay between calls to the same API endpoint
+  // Enforce minimum delay between calls to the same network
   const now = Date.now();
-  const lastCallTime = lastApiCallTime[apiKey] || 0;
+  const lastCallTime = lastApiCallTime[networkId] || 0;
   const timeSinceLastCall = now - lastCallTime;
 
   if (timeSinceLastCall < delayMs) {
@@ -78,7 +78,7 @@ async function apiCallWithRetry<T>(
       }
 
       // Update the last call time before making the call
-      lastApiCallTime[apiKey] = Date.now();
+      lastApiCallTime[networkId] = Date.now();
 
       return await apiCall();
     } catch (error) {
@@ -111,8 +111,6 @@ async function getCachedBlockTxids(
   // Not in cache, fetch from network with retry
   const blockTxids = await apiCallWithRetry(
     () => getBlockTxids(blockHash, networkId),
-    3,
-    500,
     networkId,
   );
 
@@ -232,8 +230,6 @@ async function monitorTransactions(networkId: string): Promise<void> {
     const currentHeight = parseInt(
       await apiCallWithRetry(
         () => getLatestBlockHeight(networkId),
-        3,
-        500,
         networkId,
       ),
       10,
@@ -269,15 +265,11 @@ async function monitorTransactions(networkId: string): Promise<void> {
     }
     const mempoolTxids = await apiCallWithRetry(
       () => getMempoolTxids(networkId),
-      3,
-      500,
       networkId,
     );
     for (const tx of uncheckedTxs) {
       const txStatus = await apiCallWithRetry(
         () => getTxStatus(tx.txid, networkId),
-        3,
-        500,
         networkId,
       );
 
@@ -326,8 +318,6 @@ async function monitorTransactions(networkId: string): Promise<void> {
       ) {
         const blockHash = await apiCallWithRetry(
           () => getBlockHashByHeight(height, networkId),
-          3,
-          500,
           networkId,
         );
 
