@@ -54,9 +54,9 @@ const lastApiCallTime: Record<string, number> = {};
  */
 async function apiCallWithRetry<T>(
   apiCall: () => Promise<T>,
-  networkId: string = "default", // Track rate limiting per network
+  networkId: string, // Track rate limiting per network
   retries = 3,
-  delayMs = 500
+  delayMs = 500,
 ): Promise<T> {
   // Enforce minimum delay between calls to the same network
   const now = Date.now();
@@ -228,10 +228,7 @@ async function monitorTransactions(networkId: string): Promise<void> {
 
     const lastCheckedHeight = state?.last_checked_height || 0;
     const currentHeight = parseInt(
-      await apiCallWithRetry(
-        () => getLatestBlockHeight(networkId),
-        networkId,
-      ),
+      await apiCallWithRetry(() => getLatestBlockHeight(networkId), networkId),
       10,
     );
 
