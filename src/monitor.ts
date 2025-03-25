@@ -56,7 +56,7 @@ async function apiCallWithRetry<T>(
   apiCall: () => Promise<T>,
   networkId: string, // Track rate limiting per network
   retries = 3,
-  delayMs = 500,
+  delayMs = 300,
 ): Promise<T> {
   // Enforce minimum delay between calls to the same network
   const now = Date.now();
@@ -84,7 +84,7 @@ async function apiCallWithRetry<T>(
     } catch (error) {
       lastError = error;
       logger.warn(
-        `API call failed (attempt ${attempt + 1}/${retries}):`,
+        `API call failed on ${networkId} (attempt ${attempt + 1}/${retries}):`,
         error,
       );
     }
