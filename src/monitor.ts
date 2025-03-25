@@ -260,7 +260,6 @@ async function monitorTransactions(networkId: string): Promise<void> {
           tx.txid,
         ]);
       }
-      await sleep(500); //be nice. For vaults with 60 triggerTx ~ 30 secs
     }
     if (uncheckedTxs.length) {
       logger.info(
@@ -282,10 +281,6 @@ async function monitorTransactions(networkId: string): Promise<void> {
         height <= currentHeight;
         height++
       ) {
-        // Add delay between block processing to avoid rate limiting
-        if (height > reorgSafeStartHeight) {
-          await sleep(200); // 200ms delay between block requests
-        }
         
         const blockHash = await apiCallWithRetry(() => 
           getBlockHashByHeight(height, networkId)
