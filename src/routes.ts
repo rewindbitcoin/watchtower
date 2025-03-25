@@ -60,7 +60,7 @@ export function registerRoutes(
           const { vaultId, triggerTxIds, commitment, vaultNumber } = vault;
           if (!vaultId || !Array.isArray(triggerTxIds)) {
             logger.error(
-              `Invalid vault data: missing vaultId or triggerTxIds`,
+              `Invalid vault data for ${networkId} network: missing vaultId or triggerTxIds`,
               { vaultId, triggerTxIds },
             );
             res.status(400).json({
@@ -76,7 +76,7 @@ export function registerRoutes(
             !Number.isInteger(vaultNumber) ||
             vaultNumber < 0
           ) {
-            logger.error(`Invalid vaultNumber: ${vaultNumber}`, { vaultId });
+            logger.error(`Invalid vaultNumber for ${networkId} network: ${vaultNumber}`, { vaultId });
             res.status(400).json({
               error: "Invalid vaultNumber. Must be a non-negative integer",
             });
@@ -86,7 +86,7 @@ export function registerRoutes(
           // Verify commitment if required
           if (requireCommitments) {
             if (!commitment) {
-              logger.error(`Missing commitment for vault ${vaultId}`);
+              logger.error(`Missing commitment for vault ${vaultId} on ${networkId} network`);
               res.status(400).json({
                 error: "Missing commitment",
                 message:
@@ -108,7 +108,7 @@ export function registerRoutes(
               });
               return;
             }
-            logger.info(`Valid commitment verified for vault ${vaultId}`);
+            logger.info(`Valid commitment verified for vault ${vaultId} on ${networkId} network`);
           }
 
           // Check if this vault has already been notified and transaction is irreversible
@@ -123,7 +123,7 @@ export function registerRoutes(
 
           if (existingNotification) {
             logger.warn(
-              `Attempt to register already accessed vault ${vaultId}`,
+              `Attempt to register already accessed vault ${vaultId} on ${networkId} network`,
               {
                 pushToken,
                 walletName,
@@ -149,7 +149,7 @@ export function registerRoutes(
 
             // If changes === 0, the entry already existed, so skip processing txids
             if (result.changes || 0 > 0) {
-              logger.info(`New device registered for vault ${vaultId}`, {
+              logger.info(`New device registered for vault ${vaultId} on ${networkId} network`, {
                 pushToken,
                 walletName,
                 vaultNumber,
@@ -164,12 +164,12 @@ export function registerRoutes(
                 );
 
               logger.info(
-                `Registered vault ${vaultId} with ${triggerTxIds.length} trigger transactions`,
+                `Registered vault ${vaultId} with ${triggerTxIds.length} trigger transactions on ${networkId} network`,
                 { walletName, vaultNumber },
               );
             } else {
               logger.info(
-                `Notification for vault ${vaultId} and push token ${pushToken} already exists, skipping txid processing`,
+                `Notification for vault ${vaultId} and push token ${pushToken} already exists on ${networkId} network, skipping txid processing`,
                 { walletName, vaultNumber },
               );
             }
@@ -179,7 +179,7 @@ export function registerRoutes(
           } catch (error) {
             // Rollback the transaction if any error occurs
             await db.exec("ROLLBACK");
-            logger.error(`Database transaction failed for vault ${vaultId}`, {
+            logger.error(`Database transaction failed for vault ${vaultId} on ${networkId} network`, {
               error: error instanceof Error ? error.message : String(error),
               walletName,
               vaultNumber,
@@ -188,13 +188,13 @@ export function registerRoutes(
           }
         }
         logger.info(
-          `Successfully registered ${vaults.length} vaults for wallet "${walletName}"`,
+          `Successfully registered ${vaults.length} vaults for wallet "${walletName}" on ${networkId} network`,
         );
         res.sendStatus(200);
         return;
       } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : String(err);
-        logger.error(`Error in /${networkId}/watchtower/register:`, {
+        logger.error(`Error in watchtower/register for ${networkId} network:`, {
           error: errorMessage,
           stack: err instanceof Error ? err.stack : undefined,
           walletName,
