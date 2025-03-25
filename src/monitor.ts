@@ -359,7 +359,36 @@ async function monitorTransactions(networkId: string): Promise<void> {
 }
 
 /**
- * Sleep function to wait between monitoring cycles
+ * Create an interruptible sleep function
+ * Returns both a sleep function and a way to interrupt it
+ */
+function createInterruptibleSleep() {
+  let timeoutId: NodeJS.Timeout | null = null;
+  let resolvePromise: (() => void) | null = null;
+  
+  const sleep = (ms: number): Promise<void> => {
+    return new Promise<void>((resolve) => {
+      resolvePromise = resolve;
+      timeoutId = setTimeout(resolve, ms);
+    });
+  };
+  
+  const interrupt = () => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+    if (resolvePromise) {
+      resolvePromise();
+      resolvePromise = null;
+    }
+  };
+  
+  return { sleep, interrupt };
+}
+
+/**
+ * Simple sleep function for cases where interruption is not needed
  */
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -374,6 +403,7 @@ export function startMonitoring(networkId: string, intervalMs = 60000) {
   // Flag to allow stopping the monitoring loop
   let running = true;
   let currentCycle: Promise<void> | null = null;
+  const { sleep: interruptibleSleep, interrupt } = createInterruptibleSleep();
 
   // Start the monitoring loop
   (async () => {
@@ -395,7 +425,8 @@ export function startMonitoring(networkId: string, intervalMs = 60000) {
       // Only sleep if we're still running
       if (running) {
         // Wait for the specified interval before the next cycle
-        await sleep(intervalMs);
+        // Use interruptible sleep so we can exit quickly on shutdown
+        await interruptibleSleep(intervalMs);
       }
     }
     logger.info(`Monitoring loop for ${networkId} has exited cleanly`);
@@ -407,6 +438,9 @@ export function startMonitoring(networkId: string, intervalMs = 60000) {
     logger.info(
       `Stopping monitoring for ${networkId}. Waiting for current cycle to complete...`,
     );
+    
+    // Interrupt any ongoing sleep to exit immediately
+    interrupt();
 
     // Return a promise that resolves when the current cycle completes
     return new Promise<void>((resolve) => {
