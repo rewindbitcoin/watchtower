@@ -220,12 +220,19 @@ const server = app.listen(port, async () => {
       }
     });
 
+    // Define the type for network shutdown result
+    type NetworkShutdownResult = {
+      networkId: string;
+      success: boolean;
+      error?: unknown;
+    };
+
     // Wait for all networks to complete their shutdown process (with parallel execution)
     const results = await Promise.allSettled(networkShutdownPromises);
 
     // Log the results
     const successful = results.filter(
-      (r) => r.status === "fulfilled" && (r.value as any).success, //FIXME: any
+      (r) => r.status === "fulfilled" && (r.value as NetworkShutdownResult).success,
     ).length;
     const failed = networks.length - successful;
     logger.info(
