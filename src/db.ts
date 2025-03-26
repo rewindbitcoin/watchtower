@@ -63,3 +63,15 @@ export function getDb(networkId: string) {
   }
   return dbConnections[networkId];
 }
+
+/**
+ * Close and remove a database connection for a specific network
+ * @param networkId The network ID
+ */
+export async function closeDb(networkId: string): Promise<void> {
+  const db = dbConnections[networkId];
+  if (db) {
+    await db.close();
+    delete dbConnections[networkId];
+  }
+}

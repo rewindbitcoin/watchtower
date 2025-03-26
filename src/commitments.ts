@@ -137,11 +137,18 @@ async function initAddressesDb(
   return db;
 }
 
-export function getAddressesDb(networkId: string) {
-  if (!addressesDbConnections[networkId]) {
-    throw new Error(
-      `Addresses database for network ${networkId} not initialized`,
-    );
+export function getAddressDb(networkId: string): any {
+  return addressesDbConnections[networkId] || null;
+}
+
+/**
+ * Close and remove an address database connection
+ * @param networkId The network ID
+ */
+export async function closeAddressDb(networkId: string): Promise<void> {
+  const db = addressesDbConnections[networkId];
+  if (db) {
+    await db.close();
+    delete addressesDbConnections[networkId];
   }
-  return addressesDbConnections[networkId];
 }
