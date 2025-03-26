@@ -210,26 +210,48 @@ const server = app.listen(port, async () => {
     }
   };
 
+  // Track shutdown state
+  let isShuttingDown = false;
+  let forceExitTimeout: NodeJS.Timeout | null = null;
+
   // Handle termination signals
   process.on("SIGINT", () => {
+    if (isShuttingDown) {
+      logger.warn("Shutdown already in progress. Please wait for clean shutdown or forced exit in 60 seconds.");
+      return;
+    }
+    
+    isShuttingDown = true;
+    
     // Set a 1 minute grace timeout to force exit if graceful shutdown fails
-    const forceExitTimeout = setTimeout(() => {
+    forceExitTimeout = setTimeout(() => {
       logger.error("Forced shutdown after timeout!");
       process.exit(1);
     }, 60000);
 
     // Start graceful shutdown
-    shutdown("SIGINT").finally(() => clearTimeout(forceExitTimeout));
+    shutdown("SIGINT").finally(() => {
+      if (forceExitTimeout) clearTimeout(forceExitTimeout);
+    });
   });
 
   process.on("SIGTERM", () => {
+    if (isShuttingDown) {
+      logger.warn("Shutdown already in progress. Please wait for clean shutdown or forced exit in 60 seconds.");
+      return;
+    }
+    
+    isShuttingDown = true;
+    
     // Set a 1 minute grace timeout to force exit if graceful shutdown fails
-    const forceExitTimeout = setTimeout(() => {
+    forceExitTimeout = setTimeout(() => {
       logger.error("Forced shutdown after timeout!");
       process.exit(1);
     }, 60000);
 
     // Start graceful shutdown
-    shutdown("SIGTERM").finally(() => clearTimeout(forceExitTimeout));
+    shutdown("SIGTERM").finally(() => {
+      if (forceExitTimeout) clearTimeout(forceExitTimeout);
+    });
   });
 });
