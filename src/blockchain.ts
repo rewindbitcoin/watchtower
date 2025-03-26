@@ -43,21 +43,21 @@ export function setRegtestApiUrl(url: string): void {
  * @returns Promise with the fetch response
  */
 async function fetchWithTimeout(
-  url: string, 
-  options: RequestInit = {}, 
-  timeout: number = DEFAULT_TIMEOUT
+  url: string,
+  options: RequestInit = {},
+  timeout: number = DEFAULT_TIMEOUT,
 ): Promise<Response> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
-  
+
   try {
     const response = await fetch(url, {
       ...options,
-      signal: controller.signal
+      signal: controller.signal,
     });
     return response;
   } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError') {
+    if (error instanceof Error && error.name === "AbortError") {
       throw new Error(`Request timeout after ${timeout}ms: ${url}`);
     }
     throw error;
@@ -89,14 +89,19 @@ export async function getBlockHashByHeight(
 ): Promise<string> {
   const baseUrl = API_BASE_URLS[network as keyof typeof API_BASE_URLS];
   try {
-    const response = await fetchWithTimeout(`${baseUrl}/block-height/${height}`);
+    const response = await fetchWithTimeout(
+      `${baseUrl}/block-height/${height}`,
+    );
     if (!response.ok)
       throw new Error(
         `Failed to fetch block hash for height ${height} on network ${network}: ${response.statusText}`,
       );
     return response.text();
   } catch (error) {
-    logger.error(`Error fetching block hash for height ${height} on ${network}`, error);
+    logger.error(
+      `Error fetching block hash for height ${height} on ${network}`,
+      error,
+    );
     throw error;
   }
 }
@@ -107,12 +112,19 @@ export async function getBlockTxids(
 ): Promise<string[]> {
   const baseUrl = API_BASE_URLS[network as keyof typeof API_BASE_URLS];
   try {
-    const response = await fetchWithTimeout(`${baseUrl}/block/${blockHash}/txids`);
+    const response = await fetchWithTimeout(
+      `${baseUrl}/block/${blockHash}/txids`,
+    );
     if (!response.ok)
-      throw new Error(`Failed to fetch txids for block: ${response.statusText}`);
+      throw new Error(
+        `Failed to fetch txids for block: ${response.statusText}`,
+      );
     return response.json();
   } catch (error) {
-    logger.error(`Error fetching txids for block ${blockHash} on ${network}`, error);
+    logger.error(
+      `Error fetching txids for block ${blockHash} on ${network}`,
+      error,
+    );
     throw error;
   }
 }
