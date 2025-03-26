@@ -76,7 +76,7 @@ export async function verifyCommitment(
     }
 
     // Connect to the addresses database
-    const db = await getAddressesDb(networkId, addressDbPath);
+    const db = await initAddressesDb(networkId, addressDbPath);
 
     // Check if any of the output addresses are authorized
     const placeholders = candidateAddresses.map(() => "?").join(",");
@@ -102,9 +102,9 @@ export async function verifyCommitment(
 }
 
 /**
- * Get a connection to the addresses database
+ * Initialize a connection to the addresses database
  */
-async function getAddressesDb(networkId: string, dbPath: string): Promise<any> {
+async function initAddressesDb(networkId: string, dbPath: string): Promise<any> {
   if (addressDbConnections[networkId]) {
     return addressDbConnections[networkId];
   }
