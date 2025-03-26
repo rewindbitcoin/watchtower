@@ -74,11 +74,18 @@ export async function getMempoolTxids(
   return response.json();
 }
 
+// Transaction status response interface
+export interface TxStatus {
+  confirmed: boolean;
+  block_height?: number;
+  block_hash?: string;
+}
+
 // Check transaction status
 export async function getTxStatus(
   txid: string,
   network: string = "bitcoin",
-): Promise<any> {//FIXME: any
+): Promise<TxStatus | null> {
   const baseUrl = API_BASE_URLS[network as keyof typeof API_BASE_URLS];
   const response = await fetch(`${baseUrl}/tx/${txid}/status`);
   if (!response.ok && response.status !== 404) {
