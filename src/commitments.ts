@@ -136,15 +136,27 @@ async function getAddressesDb(networkId: string, dbPath: string): Promise<any> {
 
 /**
  * Close all address database connections
+ * @param networkIds Optional array of network IDs to close. If not provided, all connections are closed.
  */
-export async function closeAllAddressDbConnections(): Promise<void> {
-  const closePromises = Object.values(addressDbConnections).map((db) =>
-    db.close(),
-  );
-  await Promise.all(closePromises);
-
-  // Clear the connections object
-  Object.keys(addressDbConnections).forEach((key) => {
-    delete addressDbConnections[key];
-  });
+export async function closeAllAddressDbConnections(networkIds?: string[]): Promise<void> {
+  if (networkIds) {
+    // Close only the specified network connections
+    const closePromises = networkIds.map(networkId => {
+      const db = addressDbConnections[networkId];
+      if (db) {
+        // Remove from the connections map
+        delete addressDbConnections[networkId];
+        return db.close();
+      }
+      return Promise.resolve();
+    });
+    await Promise.all(closePromises);
+  } else {
+    // Close all connections
+    const closePromises = Object.entries(addressDbConnections).map(([networkId, db]) => {
+      delete addressDbConnections[networkId];
+      return db.close();
+    });
+    await Promise.all(closePromises);
+  }
 }

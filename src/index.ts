@@ -181,11 +181,43 @@ const server = app.listen(port, async () => {
   const shutdown = async (signal: string) => {
     logger.warn(`${signal} received. Shutting down gracefully...`);
 
-    // Stop all monitoring loops and wait for them to complete
-    logger.info("Stopping monitoring loops...");
-    const stopPromises = stopFunctions.map((stop) => stop());
-    await Promise.all(stopPromises);
-    logger.info("All monitoring loops stopped successfully");
+    // Create an array of promises, one for each network
+    const networkShutdownPromises = networks.map(async (networkId, index) => {
+      try {
+        // Stop monitoring for this network
+        logger.info(`Stopping monitoring for ${networkId}...`);
+        await stopFunctions[index]();
+        logger.info(`Monitoring loop for ${networkId} stopped successfully`);
+
+        // Close database connections for this network
+        logger.info(`Closing database connections for ${networkId}...`);
+        
+        try {
+          // Close main database connection
+          await closeAllConnections([networkId]);
+          
+          // Close address database connection
+          await closeAllAddressDbConnections([networkId]);
+          
+          logger.info(`Database connections for ${networkId} closed successfully`);
+        } catch (dbError) {
+          logger.error(`Error closing database connections for ${networkId}:`, dbError);
+        }
+        
+        return { networkId, success: true };
+      } catch (error) {
+        logger.error(`Error during shutdown of ${networkId}:`, error);
+        return { networkId, success: false, error };
+      }
+    });
+
+    // Wait for all networks to complete their shutdown process (with parallel execution)
+    const results = await Promise.allSettled(networkShutdownPromises);
+    
+    // Log the results
+    const successful = results.filter(r => r.status === 'fulfilled' && (r.value as any).success).length;
+    const failed = networks.length - successful;
+    logger.info(`Network shutdown complete: ${successful} successful, ${failed} failed`);
 
     // Close server
     logger.info("Closing HTTP server...");
@@ -196,18 +228,9 @@ const server = app.listen(port, async () => {
       });
     });
 
-    // Close database connections
-    logger.info("Closing database connections...");
-    try {
-      await closeAllConnections();
-      await closeAllAddressDbConnections();
-      logger.info("All database connections closed.");
-      logger.info("Shutdown complete.");
-      process.exit(0);
-    } catch (err) {
-      logger.error("Error closing database connections:", err);
-      process.exit(1);
-    }
+    // Log shutdown completion
+    logger.info("Shutdown complete.");
+    process.exit(0);
   };
 
   // Track shutdown state
