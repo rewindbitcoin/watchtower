@@ -3,9 +3,9 @@
   "version": "1.0.2",
   "type": "commonjs",
   "description": "Monitoring service for RewindBitcoin Wallet that tracks Bitcoin transactions and sends push notifications",
-  "main": "dist/src/index.js",
+  "main": "dist/index.js",
   "bin": {
-    "watchtower": "dist/src/index.js"
+    "watchtower": "dist/index.js"
   },
   "scripts": {
     "build": "tsc",
