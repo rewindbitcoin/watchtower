@@ -96,7 +96,7 @@ async function apiCallWithRetry<T>(
  * Get block transactions with caching to reduce network calls
  * Returns cached transactions if available, otherwise fetches from network
  */
-async function getCachedBlockTxids(
+async function getBlockTxidsWithCache(
   blockHash: string,
   networkId: string,
 ): Promise<string[]> {
@@ -319,7 +319,7 @@ async function monitorTransactions(networkId: string): Promise<void> {
         );
 
         // Get block transactions (from cache if available)
-        const blockTxids = await getCachedBlockTxids(blockHash, networkId);
+        const blockTxids = await getBlockTxidsWithCache(blockHash, networkId);
         scannedBlockTxids.push(...blockTxids);
 
         // Get all transactions that need checking
