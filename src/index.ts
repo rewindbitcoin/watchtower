@@ -16,11 +16,11 @@
 import express from "express";
 import { AddressInfo } from "net";
 import path from "path";
-import { initDb, closeAllConnections } from "./db";
+import { initDb, getDb, closeDb } from "./db";
 import { registerRoutes } from "./routes";
 import { startMonitoring } from "./monitor";
 import { setRegtestApiUrl } from "./blockchain";
-import { closeAllAddressDbConnections } from "./commitments";
+import { getAddressDb, closeAddressDb } from "./commitments";
 import fs from "fs";
 import { createLogger } from "./logger";
 
@@ -194,10 +194,28 @@ const server = app.listen(port, async () => {
         
         try {
           // Close main database connection
-          await closeAllConnections([networkId]);
+          try {
+            const db = getDb(networkId);
+            if (db) {
+              await db.close();
+              delete dbConnections[networkId];
+              logger.info(`Main database connection for ${networkId} closed successfully`);
+            }
+          } catch (mainDbError) {
+            logger.error(`Error closing main database for ${networkId}:`, mainDbError);
+          }
           
-          // Close address database connection
-          await closeAllAddressDbConnections([networkId]);
+          // Close address database connection if it exists
+          try {
+            const addressDb = getAddressDb(networkId);
+            if (addressDb) {
+              await addressDb.close();
+              delete addressDbConnections[networkId];
+              logger.info(`Address database connection for ${networkId} closed successfully`);
+            }
+          } catch (addressDbError) {
+            logger.error(`Error closing address database for ${networkId}:`, addressDbError);
+          }
           
           logger.info(`Database connections for ${networkId} closed successfully`);
         } catch (dbError) {
