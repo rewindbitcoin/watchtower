@@ -22,8 +22,8 @@ import { createLogger } from "./logger";
 // Create logger for this module
 const logger = createLogger("Commitments");
 
-// Cache for address database connections
-const addressDbConnections: Record<string, any> = {};
+// Cache for addresses database connections
+const addressesDbConnections: Record<string, any> = {};
 
 /**
  * Verify that a commitment transaction pays to an authorized address
@@ -104,9 +104,12 @@ export async function verifyCommitment(
 /**
  * Initialize a connection to the addresses database
  */
-async function initAddressesDb(networkId: string, dbPath: string): Promise<any> {
-  if (addressDbConnections[networkId]) {
-    return addressDbConnections[networkId];
+async function initAddressesDb(
+  networkId: string,
+  dbPath: string,
+): Promise<any> {
+  if (addressesDbConnections[networkId]) {
+    return addressesDbConnections[networkId];
   }
 
   // Open the database
@@ -129,7 +132,16 @@ async function initAddressesDb(networkId: string, dbPath: string): Promise<any> 
   }
 
   // Cache the connection
-  addressDbConnections[networkId] = db;
+  addressesDbConnections[networkId] = db;
 
   return db;
+}
+
+export function getAddressesDb(networkId: string) {
+  if (!addressesDbConnections[networkId]) {
+    throw new Error(
+      `Addresses database for network ${networkId} not initialized`,
+    );
+  }
+  return addressesDbConnections[networkId];
 }

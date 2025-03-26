@@ -63,26 +63,3 @@ export function getDb(networkId: string) {
   }
   return dbConnections[networkId];
 }
-
-export function closeAllConnections(networkIds?: string[]) {
-  if (networkIds) {
-    // Close only the specified network connections
-    const closePromises = networkIds.map(networkId => {
-      const db = dbConnections[networkId];
-      if (db) {
-        // Remove from the connections map
-        delete dbConnections[networkId];
-        return db.close();
-      }
-      return Promise.resolve();
-    });
-    return Promise.all(closePromises);
-  } else {
-    // Close all connections
-    const closePromises = Object.entries(dbConnections).map(([networkId, db]) => {
-      delete dbConnections[networkId];
-      return db.close();
-    });
-    return Promise.all(closePromises);
-  }
-}
