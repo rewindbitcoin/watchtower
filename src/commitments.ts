@@ -16,14 +16,17 @@ import * as bitcoin from "bitcoinjs-lib";
 import * as fs from "fs";
 import * as path from "path";
 import sqlite3 from "sqlite3";
-import { open } from "sqlite";
+import { open, Database } from "sqlite";
 import { createLogger } from "./logger";
 
 // Create logger for this module
 const logger = createLogger("Commitments");
 
 // Cache for addresses database connections
-const addressesDbConnections: Record<string, any> = {}; //FIXME: any
+const addressesDbConnections: Record<
+  string,
+  Database<sqlite3.Database, sqlite3.Statement>
+> = {};
 
 /**
  * Verify that a commitment transaction pays to an authorized address
@@ -104,11 +107,7 @@ export async function verifyCommitment(
 /**
  * Initialize a connection to the addresses database
  */
-async function initAddressesDb(
-  networkId: string,
-  dbPath: string,
-): Promise<any> {
-  //FIXME: any
+async function initAddressesDb(networkId: string, dbPath: string) {
   if (addressesDbConnections[networkId]) {
     return addressesDbConnections[networkId];
   }
@@ -129,7 +128,6 @@ async function initAddressesDb(
     throw new Error(
       `Addresses table does not exist in database: ${dbPath}. This database is managed by another process and should contain the addresses table.`,
     );
-    return db;
   }
 
   // Cache the connection
