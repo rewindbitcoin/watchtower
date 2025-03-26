@@ -217,12 +217,14 @@ const server = app.listen(port, async () => {
   // Handle termination signals
   process.on("SIGINT", () => {
     if (isShuttingDown) {
-      logger.warn("Shutdown already in progress. Please wait for clean shutdown or forced exit in 60 seconds.");
+      logger.warn(
+        "Shutdown already in progress. Attempting clean shutdown; will force exit automatically in 60 seconds.",
+      );
       return;
     }
-    
+
     isShuttingDown = true;
-    
+
     // Set a 1 minute grace timeout to force exit if graceful shutdown fails
     forceExitTimeout = setTimeout(() => {
       logger.error("Forced shutdown after timeout!");
@@ -237,12 +239,14 @@ const server = app.listen(port, async () => {
 
   process.on("SIGTERM", () => {
     if (isShuttingDown) {
-      logger.warn("Shutdown already in progress. Please wait for clean shutdown or forced exit in 60 seconds.");
+      logger.warn(
+        "Shutdown already in progress. Attempting clean shutdown; will force exit automatically in 60 seconds.",
+      );
       return;
     }
-    
+
     isShuttingDown = true;
-    
+
     // Set a 1 minute grace timeout to force exit if graceful shutdown fails
     forceExitTimeout = setTimeout(() => {
       logger.error("Forced shutdown after timeout!");
