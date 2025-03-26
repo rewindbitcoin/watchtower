@@ -23,7 +23,7 @@ import { createLogger } from "./logger";
 const logger = createLogger("Commitments");
 
 // Cache for addresses database connections
-const addressesDbConnections: Record<string, any> = {};
+const addressesDbConnections: Record<string, any> = {}; //FIXME: any
 
 /**
  * Verify that a commitment transaction pays to an authorized address
@@ -108,6 +108,7 @@ async function initAddressesDb(
   networkId: string,
   dbPath: string,
 ): Promise<any> {
+  //FIXME: any
   if (addressesDbConnections[networkId]) {
     return addressesDbConnections[networkId];
   }
@@ -125,7 +126,7 @@ async function initAddressesDb(
   );
 
   if (!tableExists) {
-    logger.warn(
+    throw new Error(
       `Addresses table does not exist in database: ${dbPath}. This database is managed by another process and should contain the addresses table.`,
     );
     return db;
@@ -137,18 +138,11 @@ async function initAddressesDb(
   return db;
 }
 
-export function getAddressDb(networkId: string): any {
-  return addressesDbConnections[networkId] || null;
-}
-
-/**
- * Close and remove an address database connection
- * @param networkId The network ID
- */
-export async function closeAddressDb(networkId: string): Promise<void> {
-  const db = addressesDbConnections[networkId];
-  if (db) {
-    await db.close();
-    delete addressesDbConnections[networkId];
+export function getAddressesDb(networkId: string) {
+  if (!addressesDbConnections[networkId]) {
+    throw new Error(
+      `Addresses database for network ${networkId} not initialized`,
+    );
   }
+  return addressesDbConnections[networkId];
 }

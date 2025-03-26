@@ -16,11 +16,11 @@
 import express from "express";
 import { AddressInfo } from "net";
 import path from "path";
-import { initDb, getDb, closeDb } from "./db";
+import { initDb, getDb } from "./db";
 import { registerRoutes } from "./routes";
 import { startMonitoring } from "./monitor";
 import { setRegtestApiUrl } from "./blockchain";
-import { getAddressDb, closeAddressDb } from "./commitments";
+import { getAddressesDb } from "./commitments";
 import fs from "fs";
 import { createLogger } from "./logger";
 
@@ -120,8 +120,8 @@ const server = app.listen(port, async () => {
   logger.info(`Watchtower API running on port ${address.port}`);
 
   // Initialize databases for each enabled network
-  const networks = [];
-  const stopFunctions: Array<() => void> = [];
+  const networks: string[] = [];
+  const stopFunctions: Array<() => Promise<void>> = [];
 
   if (runBitcoin) {
     networks.push("bitcoin");
@@ -186,42 +186,33 @@ const server = app.listen(port, async () => {
       try {
         // Stop monitoring for this network
         logger.info(`Stopping monitoring for ${networkId}...`);
-        await stopFunctions[index]();
+        const stopFunction = stopFunctions[index];
+        if (!stopFunction)
+          throw new Error(`Stop function not created for ${networkId}`);
+        await stopFunction();
         logger.info(`Monitoring loop for ${networkId} stopped successfully`);
 
         // Close database connections for this network
         logger.info(`Closing database connections for ${networkId}...`);
-        
+
         try {
           // Close main database connection
-          try {
-            const db = getDb(networkId);
-            if (db) {
-              await db.close();
-              delete dbConnections[networkId];
-              logger.info(`Main database connection for ${networkId} closed successfully`);
-            }
-          } catch (mainDbError) {
-            logger.error(`Error closing main database for ${networkId}:`, mainDbError);
-          }
-          
-          // Close address database connection if it exists
-          try {
-            const addressDb = getAddressDb(networkId);
-            if (addressDb) {
-              await addressDb.close();
-              delete addressDbConnections[networkId];
-              logger.info(`Address database connection for ${networkId} closed successfully`);
-            }
-          } catch (addressDbError) {
-            logger.error(`Error closing address database for ${networkId}:`, addressDbError);
-          }
-          
-          logger.info(`Database connections for ${networkId} closed successfully`);
+          await getDb(networkId).close();
+
+          if (requireCommitments)
+            // Close address database connection
+            await getAddressesDb(networkId).close();
+
+          logger.info(
+            `Database connections for ${networkId} closed successfully`,
+          );
         } catch (dbError) {
-          logger.error(`Error closing database connections for ${networkId}:`, dbError);
+          logger.error(
+            `Error closing database connections for ${networkId}:`,
+            dbError,
+          );
         }
-        
+
         return { networkId, success: true };
       } catch (error) {
         logger.error(`Error during shutdown of ${networkId}:`, error);
@@ -231,11 +222,15 @@ const server = app.listen(port, async () => {
 
     // Wait for all networks to complete their shutdown process (with parallel execution)
     const results = await Promise.allSettled(networkShutdownPromises);
-    
+
     // Log the results
-    const successful = results.filter(r => r.status === 'fulfilled' && (r.value as any).success).length;
+    const successful = results.filter(
+      (r) => r.status === "fulfilled" && (r.value as any).success, //FIXME: any
+    ).length;
     const failed = networks.length - successful;
-    logger.info(`Network shutdown complete: ${successful} successful, ${failed} failed`);
+    logger.info(
+      `Network shutdown complete: ${successful} successful, ${failed} failed`,
+    );
 
     // Close server
     logger.info("Closing HTTP server...");

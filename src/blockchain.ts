@@ -17,7 +17,8 @@
 // Base URLs for different networks
 const API_BASE_URLS = {
   bitcoin: "https://blockstream.info/api",
-  testnet: "https://blockstream.info/testnet/api",
+  //testnet: "https://blockstream.info/testnet/api",
+  testnet: "https://mempool.space/testnet/api",
   tape: "https://tape.rewindbitcoin.com/api",
   regtest: "", // This will be set dynamically
 };
@@ -77,7 +78,7 @@ export async function getMempoolTxids(
 export async function getTxStatus(
   txid: string,
   network: string = "bitcoin",
-): Promise<any> {
+): Promise<any> {//FIXME: any
   const baseUrl = API_BASE_URLS[network as keyof typeof API_BASE_URLS];
   const response = await fetch(`${baseUrl}/tx/${txid}/status`);
   if (!response.ok && response.status !== 404) {
