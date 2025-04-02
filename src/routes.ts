@@ -199,13 +199,10 @@ export function registerRoutes(
         } catch (error) {
           // Rollback the transaction if any error occurs
           await db.exec("ROLLBACK");
-          logger.error(
-            `Database transaction failed on ${networkId} network`,
-            {
-              error: error instanceof Error ? error.message : String(error),
-              walletName,
-            },
-          );
+          logger.error(`Database transaction failed on ${networkId} network`, {
+            error: error instanceof Error ? error.message : String(error),
+            walletName,
+          });
           throw error;
         }
         return;
