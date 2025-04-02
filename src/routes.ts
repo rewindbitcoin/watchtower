@@ -55,99 +55,104 @@ export function registerRoutes(
 
         const db = getDb(networkId);
 
-        // Insert or update each vault and its transaction ids.
-        for (const vault of vaults) {
-          const { vaultId, triggerTxIds, commitment, vaultNumber } = vault;
-          if (!vaultId || !Array.isArray(triggerTxIds)) {
-            logger.error(
-              `Invalid vault data for ${networkId} network: missing vaultId or triggerTxIds`,
-              { vaultId, triggerTxIds },
-            );
-            res.status(400).json({
-              error:
-                "Invalid vault data. vaultId, vaultNumber, and triggerTxIds array are required",
-            });
-            return;
-          }
+        // Start a single transaction for the entire request
+        await db.exec("BEGIN TRANSACTION");
 
-          // Validate vaultNumber is a non-negative integer
-          if (
-            vaultNumber === undefined ||
-            !Number.isInteger(vaultNumber) ||
-            vaultNumber < 0
-          ) {
-            logger.error(
-              `Invalid vaultNumber for ${networkId} network: ${vaultNumber}`,
-              { vaultId },
-            );
-            res.status(400).json({
-              error: "Invalid vaultNumber. Must be a non-negative integer",
-            });
-            return;
-          }
-
-          // Verify commitment if required
-          if (requireCommitments) {
-            if (!commitment) {
+        try {
+          // Insert or update each vault and its transaction ids.
+          for (const vault of vaults) {
+            const { vaultId, triggerTxIds, commitment, vaultNumber } = vault;
+            if (!vaultId || !Array.isArray(triggerTxIds)) {
               logger.error(
-                `Missing commitment for vault ${vaultId} on ${networkId} network`,
+                `Invalid vault data for ${networkId} network: missing vaultId or triggerTxIds`,
+                { vaultId, triggerTxIds },
               );
+              await db.exec("ROLLBACK");
               res.status(400).json({
-                error: "Missing commitment",
-                message:
-                  "A commitment transaction is required for vault registration",
+                error:
+                  "Invalid vault data. vaultId, vaultNumber, and triggerTxIds array are required",
               });
               return;
             }
 
-            const isValid = await verifyCommitment(
-              commitment,
-              networkId,
-              dbFolder,
-            );
-            if (!isValid) {
-              res.status(403).json({
-                error: "Invalid commitment",
-                message:
-                  "The commitment transaction does not pay to an authorized address",
+            // Validate vaultNumber is a non-negative integer
+            if (
+              vaultNumber === undefined ||
+              !Number.isInteger(vaultNumber) ||
+              vaultNumber < 0
+            ) {
+              logger.error(
+                `Invalid vaultNumber for ${networkId} network: ${vaultNumber}`,
+                { vaultId },
+              );
+              await db.exec("ROLLBACK");
+              res.status(400).json({
+                error: "Invalid vaultNumber. Must be a non-negative integer",
               });
               return;
             }
-            logger.info(
-              `Valid commitment verified for vault ${vaultId} on ${networkId} network`,
+
+            // Verify commitment if required
+            if (requireCommitments) {
+              if (!commitment) {
+                logger.error(
+                  `Missing commitment for vault ${vaultId} on ${networkId} network`,
+                );
+                await db.exec("ROLLBACK");
+                res.status(400).json({
+                  error: "Missing commitment",
+                  message:
+                    "A commitment transaction is required for vault registration",
+                });
+                return;
+              }
+
+              const isValid = await verifyCommitment(
+                commitment,
+                networkId,
+                dbFolder,
+              );
+              if (!isValid) {
+                await db.exec("ROLLBACK");
+                res.status(403).json({
+                  error: "Invalid commitment",
+                  message:
+                    "The commitment transaction does not pay to an authorized address",
+                });
+                return;
+              }
+              logger.info(
+                `Valid commitment verified for vault ${vaultId} on ${networkId} network`,
+              );
+            }
+
+            // Check if this vault has already been notified and transaction is irreversible
+            const existingNotification = await db.get(
+              `SELECT n.status 
+               FROM notifications n
+               JOIN vault_txids vt ON n.vaultId = vt.vaultId
+               WHERE n.vaultId = ? AND n.status = 'sent' AND vt.status = 'irreversible' 
+               LIMIT 1`,
+              [vaultId],
             );
-          }
 
-          // Check if this vault has already been notified and transaction is irreversible
-          const existingNotification = await db.get(
-            `SELECT n.status 
-             FROM notifications n
-             JOIN vault_txids vt ON n.vaultId = vt.vaultId
-             WHERE n.vaultId = ? AND n.status = 'sent' AND vt.status = 'irreversible' 
-             LIMIT 1`,
-            [vaultId],
-          );
+            if (existingNotification) {
+              logger.warn(
+                `Attempt to register already accessed vault ${vaultId} on ${networkId} network`,
+                {
+                  pushToken,
+                  walletName,
+                  vaultNumber,
+                },
+              );
+              await db.exec("ROLLBACK");
+              res.status(409).json({
+                error: "Vault already accessed",
+                message: `Vault ${vaultId} has already been accessed and cannot be registered again.`,
+              });
+              return;
+            }
 
-          if (existingNotification) {
-            logger.warn(
-              `Attempt to register already accessed vault ${vaultId} on ${networkId} network`,
-              {
-                pushToken,
-                walletName,
-                vaultNumber,
-              },
-            );
-            res.status(409).json({
-              error: "Vault already accessed",
-              message: `Vault ${vaultId} has already been accessed and cannot be registered again.`,
-            });
-            return;
-          }
-
-          // Use a transaction to ensure atomicity
-          await db.exec("BEGIN TRANSACTION");
-
-          try {
             // Insert notification entry and check if it was actually inserted
             const result = await db.run(
               `INSERT OR IGNORE INTO notifications (pushToken, vaultId, walletName, vaultNumber, status) VALUES (?, ?, ?, ?, 'pending')`,
@@ -183,27 +188,26 @@ export function registerRoutes(
                 { walletName, vaultNumber },
               );
             }
-
-            // Commit the transaction
-            await db.exec("COMMIT");
-          } catch (error) {
-            // Rollback the transaction if any error occurs
-            await db.exec("ROLLBACK");
-            logger.error(
-              `Database transaction failed for vault ${vaultId} on ${networkId} network`,
-              {
-                error: error instanceof Error ? error.message : String(error),
-                walletName,
-                vaultNumber,
-              },
-            );
-            throw error;
           }
+
+          // Commit the transaction after processing all vaults
+          await db.exec("COMMIT");
+          logger.info(
+            `Successfully registered ${vaults.length} vaults for wallet "${walletName}" on ${networkId} network`,
+          );
+          res.sendStatus(200);
+        } catch (error) {
+          // Rollback the transaction if any error occurs
+          await db.exec("ROLLBACK");
+          logger.error(
+            `Database transaction failed on ${networkId} network`,
+            {
+              error: error instanceof Error ? error.message : String(error),
+              walletName,
+            },
+          );
+          throw error;
         }
-        logger.info(
-          `Successfully registered ${vaults.length} vaults for wallet "${walletName}" on ${networkId} network`,
-        );
-        res.sendStatus(200);
         return;
       } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : String(err);
