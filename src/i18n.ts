@@ -55,7 +55,7 @@ const messages: Record<Locale, MessageTemplates> = {
  */
 export function normalizeLocale(locale: string): Locale {
   // Extract the language code (part before the hyphen, if any)
-  const languageCode = locale.split("-")[0].toLowerCase();
+  const languageCode = locale.split("-")[0]!.toLowerCase();
 
   // Return the language code if supported, otherwise default to 'en'
   return languageCode in messages ? (languageCode as Locale) : "en";
