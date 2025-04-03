@@ -16,16 +16,12 @@
 export type Locale = "en" | "es";
 
 // Define message types
-export type MessageType =
-  | "vaultAccessTitle"
-  | "vaultAccessBody"
-  | "vaultAccessBodyWithRetry";
+export type MessageType = "vaultAccessTitle" | "vaultAccessBody";
 
 // Define message templates with placeholders
 interface MessageTemplates {
   vaultAccessTitle: string;
   vaultAccessBody: string;
-  vaultAccessBodyWithRetry: string;
 }
 
 // Define translations for each supported locale
@@ -33,18 +29,12 @@ const messages: Record<Locale, MessageTemplates> = {
   // English translations
   en: {
     vaultAccessTitle: "Vault Access Alert!",
-    vaultAccessBody:
-      "Your vault {vaultId} in wallet '{walletName}' is being accessed!",
-    vaultAccessBodyWithRetry:
-      "Your vault {vaultId} in wallet '{walletName}' is being accessed! (Attempt {attemptCount}, first detected {timeSince} ago)",
+    vaultAccessBody: "Your vault #{vaultNumber} from wallet \"{walletName}\" is being accessed! Access detected {timeSince} ago.",
   },
   // Spanish translations
   es: {
     vaultAccessTitle: "¡Alerta de Acceso a Bóveda!",
-    vaultAccessBody:
-      "¡Tu bóveda {vaultId} en la cartera '{walletName}' está siendo accedida!",
-    vaultAccessBodyWithRetry:
-      "¡Tu bóveda {vaultId} en la cartera '{walletName}' está siendo accedida! (Intento {attemptCount}, detectado por primera vez hace {timeSince})",
+    vaultAccessBody: "¡Tu bóveda #{vaultNumber} de tu billetera \"{walletName}\" está siendo accedida! Acceso detectado hace {timeSince}.",
   },
 };
 

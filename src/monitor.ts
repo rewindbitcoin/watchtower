@@ -194,28 +194,21 @@ async function sendNotifications(networkId: string) {
       // Get notification title
       const title = getMessage(locale, "vaultAccessTitle", {});
 
-      // Format time since first detection for retry notifications
-      let body;
-      if (notification.attemptCount > 1 && notification.firstAttemptAt) {
-        // For retry notifications, include attempt count and time since first detection
-        const timeSince = formatTimeSince(
-          notification.firstAttemptAt * 1000,
-          locale,
-        );
-
-        body = getMessage(locale, "vaultAccessBodyWithRetry", {
-          vaultId: notification.vaultId,
-          walletName: notification.walletName,
-          attemptCount: notification.attemptCount,
-          timeSince: timeSince,
-        });
+      // Format time since first detection
+      let timeSince;
+      if (notification.firstAttemptAt) {
+        timeSince = formatTimeSince(notification.firstAttemptAt * 1000, locale);
       } else {
-        // For first notification
-        body = getMessage(locale, "vaultAccessBody", {
-          vaultId: notification.vaultId,
-          walletName: notification.walletName,
-        });
+        // For first notification, use "just now"
+        timeSince = locale.startsWith('es') ? "ahora mismo" : "just now";
       }
+
+      // Get notification body
+      const body = getMessage(locale, "vaultAccessBody", {
+        vaultNumber: notification.vaultNumber,
+        walletName: notification.walletName,
+        timeSince: timeSince,
+      });
 
       // Send notification
       const success = await sendPushNotification({
