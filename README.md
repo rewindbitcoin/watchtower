@@ -295,10 +295,12 @@ vault is accessed.
 ### Notification Retry Schedule
 
 For unacknowledged notifications:
+
 - First day: Retry every 6 hours
 - After first day: Retry once per day for up to a week
 
 Retry notifications include additional information:
+
 - Attempt number
 - Time since first detection
 

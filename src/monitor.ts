@@ -132,7 +132,6 @@ async function getBlockTxidsWithCache(
   return blockTxids;
 }
 
-
 /**
  * Send notifications for triggered vaults
  */
@@ -173,7 +172,6 @@ async function sendNotifications(networkId: string) {
 
   for (const notification of notificationsToSend) {
     try {
-
       // Set firstAttemptAt if this is the first attempt
       if (notification.firstAttemptAt === null) {
         await db.run(
@@ -191,28 +189,31 @@ async function sendNotifications(networkId: string) {
       }
 
       // Get user's locale (default to 'en' if not set)
-      const locale = notification.locale || 'en';
+      const locale = notification.locale || "en";
 
       // Get notification title
-      const title = getMessage(locale, 'vaultAccessTitle', {});
+      const title = getMessage(locale, "vaultAccessTitle", {});
 
       // Format time since first detection for retry notifications
       let body;
       if (notification.attemptCount > 1 && notification.firstAttemptAt) {
         // For retry notifications, include attempt count and time since first detection
-        const timeSince = formatTimeSince(notification.firstAttemptAt * 1000, locale);
-        
-        body = getMessage(locale, 'vaultAccessBodyWithRetry', {
+        const timeSince = formatTimeSince(
+          notification.firstAttemptAt * 1000,
+          locale,
+        );
+
+        body = getMessage(locale, "vaultAccessBodyWithRetry", {
           vaultId: notification.vaultId,
           walletName: notification.walletName,
           attemptCount: notification.attemptCount,
-          timeSince: timeSince
+          timeSince: timeSince,
         });
       } else {
         // For first notification
-        body = getMessage(locale, 'vaultAccessBody', {
+        body = getMessage(locale, "vaultAccessBody", {
           vaultId: notification.vaultId,
-          walletName: notification.walletName
+          walletName: notification.walletName,
         });
       }
 

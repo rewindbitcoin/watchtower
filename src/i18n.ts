@@ -13,10 +13,13 @@
  */
 
 // Define supported locales
-export type Locale = 'en' | 'es';
+export type Locale = "en" | "es";
 
 // Define message types
-export type MessageType = 'vaultAccessTitle' | 'vaultAccessBody' | 'vaultAccessBodyWithRetry';
+export type MessageType =
+  | "vaultAccessTitle"
+  | "vaultAccessBody"
+  | "vaultAccessBodyWithRetry";
 
 // Define message templates with placeholders
 interface MessageTemplates {
@@ -29,16 +32,20 @@ interface MessageTemplates {
 const messages: Record<Locale, MessageTemplates> = {
   // English translations
   en: {
-    vaultAccessTitle: 'Vault Access Alert!',
-    vaultAccessBody: 'Your vault {vaultId} in wallet \'{walletName}\' is being accessed!',
-    vaultAccessBodyWithRetry: 'Your vault {vaultId} in wallet \'{walletName}\' is being accessed! (Attempt {attemptCount}, first detected {timeSince} ago)',
+    vaultAccessTitle: "Vault Access Alert!",
+    vaultAccessBody:
+      "Your vault {vaultId} in wallet '{walletName}' is being accessed!",
+    vaultAccessBodyWithRetry:
+      "Your vault {vaultId} in wallet '{walletName}' is being accessed! (Attempt {attemptCount}, first detected {timeSince} ago)",
   },
   // Spanish translations
   es: {
-    vaultAccessTitle: '¡Alerta de Acceso a Bóveda!',
-    vaultAccessBody: '¡Tu bóveda {vaultId} en la cartera \'{walletName}\' está siendo accedida!',
-    vaultAccessBodyWithRetry: '¡Tu bóveda {vaultId} en la cartera \'{walletName}\' está siendo accedida! (Intento {attemptCount}, detectado por primera vez hace {timeSince})',
-  }
+    vaultAccessTitle: "¡Alerta de Acceso a Bóveda!",
+    vaultAccessBody:
+      "¡Tu bóveda {vaultId} en la cartera '{walletName}' está siendo accedida!",
+    vaultAccessBodyWithRetry:
+      "¡Tu bóveda {vaultId} en la cartera '{walletName}' está siendo accedida! (Intento {attemptCount}, detectado por primera vez hace {timeSince})",
+  },
 };
 
 /**
@@ -48,10 +55,10 @@ const messages: Record<Locale, MessageTemplates> = {
  */
 export function normalizeLocale(locale: string): Locale {
   // Extract the language code (part before the hyphen, if any)
-  const languageCode = locale.split('-')[0].toLowerCase();
-  
+  const languageCode = locale.split("-")[0].toLowerCase();
+
   // Return the language code if supported, otherwise default to 'en'
-  return (languageCode in messages) ? languageCode as Locale : 'en';
+  return languageCode in messages ? (languageCode as Locale) : "en";
 }
 
 /**
@@ -62,21 +69,21 @@ export function normalizeLocale(locale: string): Locale {
  * @returns Formatted message string
  */
 export function getMessage(
-  locale: string, 
-  messageType: MessageType, 
-  placeholders: Record<string, string | number>
+  locale: string,
+  messageType: MessageType,
+  placeholders: Record<string, string | number>,
 ): string {
   // Normalize the locale
   const normalizedLocale = normalizeLocale(locale);
-  
+
   // Get the message template
   let message = messages[normalizedLocale][messageType];
-  
+
   // Replace all placeholders with their values
   Object.entries(placeholders).forEach(([key, value]) => {
     message = message.replace(`{${key}}`, String(value));
   });
-  
+
   return message;
 }
 
@@ -89,37 +96,37 @@ export function getMessage(
 export function formatTimeSince(timestamp: number, locale: string): string {
   const now = Date.now();
   const diffMs = now - timestamp;
-  
+
   // Convert to seconds, minutes, hours, days
   const seconds = Math.floor(diffMs / 1000);
   const minutes = Math.floor(seconds / 60);
   const hours = Math.floor(minutes / 60);
   const days = Math.floor(hours / 24);
-  
+
   // Normalize the locale
   const normalizedLocale = normalizeLocale(locale);
-  
+
   // Format based on locale
-  if (normalizedLocale === 'es') {
+  if (normalizedLocale === "es") {
     if (days > 0) {
-      return `${days} día${days > 1 ? 's' : ''}`;
+      return `${days} día${days > 1 ? "s" : ""}`;
     } else if (hours > 0) {
-      return `${hours} hora${hours > 1 ? 's' : ''}`;
+      return `${hours} hora${hours > 1 ? "s" : ""}`;
     } else if (minutes > 0) {
-      return `${minutes} minuto${minutes > 1 ? 's' : ''}`;
+      return `${minutes} minuto${minutes > 1 ? "s" : ""}`;
     } else {
-      return `${seconds} segundo${seconds !== 1 ? 's' : ''}`;
+      return `${seconds} segundo${seconds !== 1 ? "s" : ""}`;
     }
   } else {
     // Default to English
     if (days > 0) {
-      return `${days} day${days > 1 ? 's' : ''}`;
+      return `${days} day${days > 1 ? "s" : ""}`;
     } else if (hours > 0) {
-      return `${hours} hour${hours > 1 ? 's' : ''}`;
+      return `${hours} hour${hours > 1 ? "s" : ""}`;
     } else if (minutes > 0) {
-      return `${minutes} minute${minutes > 1 ? 's' : ''}`;
+      return `${minutes} minute${minutes > 1 ? "s" : ""}`;
     } else {
-      return `${seconds} second${seconds !== 1 ? 's' : ''}`;
+      return `${seconds} second${seconds !== 1 ? "s" : ""}`;
     }
   }
 }

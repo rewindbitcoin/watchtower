@@ -231,45 +231,50 @@ export function registerRoutes(
       // Default to bitcoin if no networkId is provided in the path
       const networkId = req.params.networkId || "bitcoin";
       const { pushToken, vaultId } = req.body;
-      
+
       try {
         // Validate network parameter
         if (!["bitcoin", "testnet", "tape", "regtest"].includes(networkId)) {
           res.status(400).json({
-            error: "Invalid networkId. Must be 'bitcoin', 'testnet', 'tape', or 'regtest'"
+            error:
+              "Invalid networkId. Must be 'bitcoin', 'testnet', 'tape', or 'regtest'",
           });
           return;
         }
 
         if (!pushToken || !vaultId) {
           res.status(400).json({
-            error: "Invalid input data. pushToken and vaultId are required"
+            error: "Invalid input data. pushToken and vaultId are required",
           });
           return;
         }
 
         const db = getDb(networkId);
-        
+
         // Update the notification to mark it as acknowledged
         const result = await db.run(
           `UPDATE notifications 
            SET acknowledged = 1 
            WHERE pushToken = ? AND vaultId = ?`,
-          [pushToken, vaultId]
+          [pushToken, vaultId],
         );
-        
+
         if (result.changes === 0) {
-          logger.warn(`Acknowledgment received for unknown notification: ${vaultId} from ${pushToken.substring(0, 10)}...`);
+          logger.warn(
+            `Acknowledgment received for unknown notification: ${vaultId} from ${pushToken.substring(0, 10)}...`,
+          );
           res.status(404).json({
             error: "Notification not found",
-            message: "No matching notification found for the provided pushToken and vaultId"
+            message:
+              "No matching notification found for the provided pushToken and vaultId",
           });
           return;
         }
-        
-        logger.info(`Notification acknowledged for vault ${vaultId} by device ${pushToken.substring(0, 10)}...`);
+
+        logger.info(
+          `Notification acknowledged for vault ${vaultId} by device ${pushToken.substring(0, 10)}...`,
+        );
         res.sendStatus(200);
-        
       } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : String(err);
         logger.error(`Error in watchtower/ack for ${networkId} network:`, {
@@ -280,7 +285,7 @@ export function registerRoutes(
         });
         res.status(500).json({ error: "Internal server error" });
       }
-    }
+    },
   );
 
   /**
