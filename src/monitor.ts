@@ -233,7 +233,7 @@ async function sendNotifications(networkId: string) {
 
       if (success) {
         logger.info(
-          `Notification sent for vault ${notification.vaultId} to device ${notification.pushToken.substring(0, 10)}... (tx status: ${notification.status}, attempt: ${notification.attemptCount}, locale: ${locale})`,
+          `Notification sent for vault ${notification.vaultId} to device ${notification.pushToken.substring(0, 10)}... (tx status: ${notification.status}, attempt: ${notification.attemptCount}, locale: ${locale} [normalized from: ${notification.locale}])`,
           {
             walletName: notification.walletName,
             vaultNumber: notification.vaultNumber,

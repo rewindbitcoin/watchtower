@@ -42,6 +42,19 @@ const messages: Record<Locale, MessageTemplates> = {
 };
 
 /**
+ * Normalize a locale string to a supported locale
+ * @param locale The locale string (e.g., "en-US", "es-MX")
+ * @returns Normalized locale ("en" or "es")
+ */
+export function normalizeLocale(locale: string): Locale {
+  // Extract the language code (part before the hyphen, if any)
+  const languageCode = locale.split('-')[0].toLowerCase();
+  
+  // Return the language code if supported, otherwise default to 'en'
+  return (languageCode in messages) ? languageCode as Locale : 'en';
+}
+
+/**
  * Get a localized message with placeholders replaced by values
  * @param locale The locale to use (defaults to 'en' if not supported)
  * @param messageType The type of message to retrieve
@@ -53,11 +66,11 @@ export function getMessage(
   messageType: MessageType, 
   placeholders: Record<string, string | number>
 ): string {
-  // Default to 'en' if the requested locale is not supported
-  const supportedLocale = (locale in messages) ? locale as Locale : 'en';
+  // Normalize the locale
+  const normalizedLocale = normalizeLocale(locale);
   
   // Get the message template
-  let message = messages[supportedLocale][messageType];
+  let message = messages[normalizedLocale][messageType];
   
   // Replace all placeholders with their values
   Object.entries(placeholders).forEach(([key, value]) => {
@@ -83,8 +96,11 @@ export function formatTimeSince(timestamp: number, locale: string): string {
   const hours = Math.floor(minutes / 60);
   const days = Math.floor(hours / 24);
   
+  // Normalize the locale
+  const normalizedLocale = normalizeLocale(locale);
+  
   // Format based on locale
-  if (locale === 'es') {
+  if (normalizedLocale === 'es') {
     if (days > 0) {
       return `${days} día${days > 1 ? 's' : ''}`;
     } else if (hours > 0) {
