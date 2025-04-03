@@ -38,6 +38,7 @@ export async function initDb(dbPath: string, networkId: string) {
       acknowledged INTEGER DEFAULT 0, -- 0 = not acknowledged, 1 = acknowledged
       lastAttemptAt INTEGER DEFAULT NULL, -- timestamp of last attempt
       attemptCount INTEGER DEFAULT 0, -- number of retry attempts
+      locale TEXT DEFAULT 'en', -- User's preferred language
       PRIMARY KEY (pushToken, vaultId)
     );
 

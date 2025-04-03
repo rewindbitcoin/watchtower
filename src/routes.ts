@@ -34,7 +34,7 @@ export function registerRoutes(
     async (req: Request, res: Response): Promise<void> => {
       // Default to bitcoin if no networkId is provided in the path
       const networkId = req.params.networkId || "bitcoin";
-      const { pushToken, vaults, walletName } = req.body;
+      const { pushToken, vaults, walletName, locale = "en" } = req.body;
       try {
         // Validate network parameter
         if (!["bitcoin", "testnet", "tape", "regtest"].includes(networkId)) {
@@ -143,6 +143,7 @@ export function registerRoutes(
                   pushToken,
                   walletName,
                   vaultNumber,
+                  locale,
                 },
               );
               await db.exec("ROLLBACK");
@@ -155,8 +156,8 @@ export function registerRoutes(
 
             // Insert notification entry and check if it was actually inserted
             const result = await db.run(
-              `INSERT OR IGNORE INTO notifications (pushToken, vaultId, walletName, vaultNumber) VALUES (?, ?, ?, ?)`,
-              [pushToken, vaultId, walletName, vaultNumber],
+              `INSERT OR IGNORE INTO notifications (pushToken, vaultId, walletName, vaultNumber, locale) VALUES (?, ?, ?, ?, ?)`,
+              [pushToken, vaultId, walletName, vaultNumber, locale],
             );
 
             // If changes === 0, the entry already existed, so skip processing txids
@@ -180,7 +181,7 @@ export function registerRoutes(
 
               logger.info(
                 `Registered vault ${vaultId} with ${triggerTxIds.length} trigger transactions on ${networkId} network`,
-                { walletName, vaultNumber },
+                { walletName, vaultNumber, locale },
               );
             } else {
               logger.info(

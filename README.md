@@ -127,6 +127,7 @@ The Watchtower API uses **SQLite** with the following structure:
 | `acknowledged` | INTEGER | Whether notification was acknowledged (0=no, 1=yes) |
 | `lastAttemptAt` | INTEGER | Unix timestamp of last notification attempt |
 | `attemptCount` | INTEGER | Number of notification attempts made |
+| `locale` | TEXT | User's preferred language (default: 'en') |
 
 **Vault Transactions Table:**
 | Column | Type | Description |
@@ -169,6 +170,7 @@ commitment verification is enabled.
   {
     "pushToken": "ExponentPushToken[xyz]",
     "walletName": "My Bitcoin Wallet",
+    "locale": "es", // Optional, defaults to "en"
     "vaults": [
       {
         "vaultId": "vault123",
@@ -185,6 +187,15 @@ commitment verification is enabled.
     ]
   }
   ```
+
+### Supported Languages
+
+The Watchtower API currently supports the following languages for notifications:
+
+- English (`en`) - Default
+- Spanish (`es`)
+
+The language is specified using the `locale` parameter during vault registration.
 
 - **Commitment Verification:**
 

@@ -22,6 +22,7 @@ import {
 } from "./blockchain";
 import { sendPushNotification } from "./notifications";
 import { createLogger } from "./logger";
+import { getMessage, formatTimeSince } from "./i18n";
 
 // Create logger for this module
 const logger = createLogger("Monitor");
@@ -131,29 +132,6 @@ async function getBlockTxidsWithCache(
   return blockTxids;
 }
 
-/**
- * Format time since a timestamp in a human-readable format
- */
-function formatTimeSince(timestamp: number): string {
-  const now = Date.now();
-  const diffMs = now - timestamp;
-  
-  // Convert to seconds, minutes, hours, days
-  const seconds = Math.floor(diffMs / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
-  
-  if (days > 0) {
-    return `${days} day${days > 1 ? 's' : ''}`;
-  } else if (hours > 0) {
-    return `${hours} hour${hours > 1 ? 's' : ''}`;
-  } else if (minutes > 0) {
-    return `${minutes} minute${minutes > 1 ? 's' : ''}`;
-  } else {
-    return `${seconds} second${seconds !== 1 ? 's' : ''}`;
-  }
-}
 
 /**
  * Send notifications for triggered vaults
@@ -172,7 +150,8 @@ async function sendNotifications(networkId: string) {
   const notificationsToSend = await db.all(
     `
     SELECT n.pushToken, n.vaultId, vt.txid, vt.status, 
-           n.firstAttemptAt, n.lastAttemptAt, n.attemptCount, n.acknowledged
+           n.firstAttemptAt, n.lastAttemptAt, n.attemptCount, n.acknowledged,
+           n.walletName, n.vaultNumber, n.locale
     FROM notifications n
     JOIN vault_txids vt ON n.vaultId = vt.vaultId
     WHERE n.acknowledged = 0 
@@ -194,11 +173,6 @@ async function sendNotifications(networkId: string) {
 
   for (const notification of notificationsToSend) {
     try {
-      // Get wallet name and vault number for this notification
-      const notificationDetails = await db.get(
-        "SELECT walletName, vaultNumber FROM notifications WHERE vaultId = ? AND pushToken = ?",
-        [notification.vaultId, notification.pushToken],
-      );
 
       // Set firstAttemptAt if this is the first attempt
       if (notification.firstAttemptAt === null) {
@@ -216,28 +190,41 @@ async function sendNotifications(networkId: string) {
         notification.attemptCount += 1;
       }
 
-      // Format time since first detection
-      const timeSinceFirstAttempt = notification.firstAttemptAt 
-        ? formatTimeSince(notification.firstAttemptAt * 1000) 
-        : "just now";
+      // Get user's locale (default to 'en' if not set)
+      const locale = notification.locale || 'en';
 
-      // Create notification message with attempt information
-      let body = `Your vault ${notification.vaultId} in wallet '${notificationDetails.walletName}' is being accessed!`;
-      
-      // Add attempt information for retries
-      if (notification.attemptCount > 1) {
-        body += ` (Attempt ${notification.attemptCount}, first detected ${timeSinceFirstAttempt} ago)`;
+      // Get notification title
+      const title = getMessage(locale, 'vaultAccessTitle', {});
+
+      // Format time since first detection for retry notifications
+      let body;
+      if (notification.attemptCount > 1 && notification.firstAttemptAt) {
+        // For retry notifications, include attempt count and time since first detection
+        const timeSince = formatTimeSince(notification.firstAttemptAt * 1000, locale);
+        
+        body = getMessage(locale, 'vaultAccessBodyWithRetry', {
+          vaultId: notification.vaultId,
+          walletName: notification.walletName,
+          attemptCount: notification.attemptCount,
+          timeSince: timeSince
+        });
+      } else {
+        // For first notification
+        body = getMessage(locale, 'vaultAccessBody', {
+          vaultId: notification.vaultId,
+          walletName: notification.walletName
+        });
       }
 
       // Send notification
       const success = await sendPushNotification({
         to: notification.pushToken,
-        title: "Vault Access Alert!",
+        title: title,
         body: body,
         data: {
           vaultId: notification.vaultId,
-          walletName: notificationDetails.walletName,
-          vaultNumber: notificationDetails.vaultNumber,
+          walletName: notification.walletName,
+          vaultNumber: notification.vaultNumber,
           txid: notification.txid,
           attemptCount: notification.attemptCount,
           firstDetectedAt: notification.firstAttemptAt,
@@ -246,10 +233,10 @@ async function sendNotifications(networkId: string) {
 
       if (success) {
         logger.info(
-          `Notification sent for vault ${notification.vaultId} to device ${notification.pushToken.substring(0, 10)}... (tx status: ${notification.status}, attempt: ${notification.attemptCount})`,
+          `Notification sent for vault ${notification.vaultId} to device ${notification.pushToken.substring(0, 10)}... (tx status: ${notification.status}, attempt: ${notification.attemptCount}, locale: ${locale})`,
           {
-            walletName: notificationDetails.walletName,
-            vaultNumber: notificationDetails.vaultNumber,
+            walletName: notification.walletName,
+            vaultNumber: notification.vaultNumber,
           },
         );
       } else {
