@@ -30,13 +30,13 @@ const messages: Record<Locale, MessageTemplates> = {
   en: {
     vaultAccessTitle: "Vault Access Detected",
     vaultAccessBody:
-      'Access to Vault #{vaultNumber} from "{walletName}" detected {timeSince} ago.',
+      'Vault #{vaultNumber} in Wallet "{walletName}" triggered {timeSince} ago.',
   },
   // Spanish translations
   es: {
     vaultAccessTitle: "Acceso a Bóveda Detectado",
     vaultAccessBody:
-      'Acceso a Bóveda #{vaultNumber} de "{walletName}" detectado hace {timeSince}.',
+      'Bóveda #{vaultNumber} de la Billetera "{walletName}" activada hace {timeSince}.',
   },
 };
 

@@ -17,16 +17,6 @@ to the user.
 
 ---
 
-## 🏗 Tech Stack
-
-- **Node.js with TypeScript** - Backend service.
-- **Express.js** - API framework.
-- **SQLite** - Data persistence.
-- **Expo Push Notifications** - Alerting users.
-- **fetch API** - Blockchain API requests.
-
----
-
 ## ⚙️ Usage
 
 ### 📱 For Users

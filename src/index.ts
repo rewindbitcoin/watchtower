@@ -20,7 +20,7 @@ import { initDb, getDb } from "./db";
 import { registerRoutes } from "./routes";
 import { startMonitoring } from "./monitor";
 import { setRegtestApiUrl } from "./blockchain";
-import { hasAddressesDb, closeAddressesDb } from "./commitments";
+import { closeAddressesDb } from "./commitments";
 import fs from "fs";
 import { createLogger } from "./logger";
 
