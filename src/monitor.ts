@@ -194,26 +194,19 @@ async function sendNotifications(networkId: string) {
       // Get notification title
       const title = getMessage(locale, "vaultAccessTitle", {});
 
-      // Format time since first detection
-      let timeSince;
-      if (notification.firstAttemptAt) {
-        timeSince = formatTimeSince(notification.firstAttemptAt * 1000, locale);
-      } else {
-        // For first notification, use "just now"
-        timeSince = locale.startsWith("es") ? "ahora mismo" : "just now";
-      }
-
-      // Get notification body with proper time phrase
-      const useHace = locale.startsWith("es") && timeSince !== "ahora mismo";
-      const useAgo = !locale.startsWith("es") && timeSince !== "just now";
+      // Format time since first detection with appropriate prefix/suffix
+      const isFirstNotification = !notification.firstAttemptAt;
+      const timeSince = formatTimeSince(
+        (notification.firstAttemptAt || Math.floor(Date.now() / 1000)) * 1000,
+        locale,
+        isFirstNotification
+      );
       
       // Get notification body
       const body = getMessage(locale, "vaultAccessBody", {
         vaultNumber: notification.vaultNumber,
         walletName: notification.walletName,
         timeSince: timeSince,
-        timePrefix: useHace ? "hace " : "",
-        timeSuffix: useAgo ? " ago" : "",
       });
 
       // Send notification

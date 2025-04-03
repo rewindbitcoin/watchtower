@@ -30,13 +30,13 @@ const messages: Record<Locale, MessageTemplates> = {
   en: {
     vaultAccessTitle: "Vault Access Detected",
     vaultAccessBody:
-      'Vault #{vaultNumber} in Wallet "{walletName}" triggered {timePrefix}{timeSince}{timeSuffix}.',
+      'Vault #{vaultNumber} in Wallet "{walletName}" triggered {timeSince}.',
   },
   // Spanish translations
   es: {
     vaultAccessTitle: "Acceso a Bóveda Detectado",
     vaultAccessBody:
-      'Acceso a Bóveda #{vaultNumber} de "{walletName}" detectado hace {timePrefix}{timeSince}{timeSuffix}.',
+      'Acceso a Bóveda #{vaultNumber} de "{walletName}" detectado {timeSince}.',
   },
 };
 
@@ -83,9 +83,19 @@ export function getMessage(
  * Format time since a timestamp in a human-readable format with localization
  * @param timestamp Unix timestamp in milliseconds
  * @param locale The locale to use
- * @returns Localized time string
+ * @param isFirstNotification Optional flag to indicate if this is the first notification
+ * @returns Localized time string with appropriate prefix/suffix
  */
-export function formatTimeSince(timestamp: number, locale: string): string {
+export function formatTimeSince(
+  timestamp: number, 
+  locale: string, 
+  isFirstNotification: boolean = false
+): string {
+  // For first notification, return "just now" or "ahora mismo" based on locale
+  if (isFirstNotification) {
+    return normalizeLocale(locale) === "es" ? "ahora mismo" : "just now";
+  }
+
   const now = Date.now();
   const diffMs = now - timestamp;
 
@@ -100,25 +110,29 @@ export function formatTimeSince(timestamp: number, locale: string): string {
 
   // Format based on locale
   if (normalizedLocale === "es") {
+    let timeUnit;
     if (days > 0) {
-      return `${days} día${days > 1 ? "s" : ""}`;
+      timeUnit = `${days} día${days > 1 ? "s" : ""}`;
     } else if (hours > 0) {
-      return `${hours} hora${hours > 1 ? "s" : ""}`;
+      timeUnit = `${hours} hora${hours > 1 ? "s" : ""}`;
     } else if (minutes > 0) {
-      return `${minutes} minuto${minutes > 1 ? "s" : ""}`;
+      timeUnit = `${minutes} minuto${minutes > 1 ? "s" : ""}`;
     } else {
-      return `${seconds} segundo${seconds !== 1 ? "s" : ""}`;
+      timeUnit = `${seconds} segundo${seconds !== 1 ? "s" : ""}`;
     }
+    return `hace ${timeUnit}`;
   } else {
     // Default to English
+    let timeUnit;
     if (days > 0) {
-      return `${days} day${days > 1 ? "s" : ""}`;
+      timeUnit = `${days} day${days > 1 ? "s" : ""}`;
     } else if (hours > 0) {
-      return `${hours} hour${hours > 1 ? "s" : ""}`;
+      timeUnit = `${hours} hour${hours > 1 ? "s" : ""}`;
     } else if (minutes > 0) {
-      return `${minutes} minute${minutes > 1 ? "s" : ""}`;
+      timeUnit = `${minutes} minute${minutes > 1 ? "s" : ""}`;
     } else {
-      return `${seconds} second${seconds !== 1 ? "s" : ""}`;
+      timeUnit = `${seconds} second${seconds !== 1 ? "s" : ""}`;
     }
+    return `${timeUnit} ago`;
   }
 }
