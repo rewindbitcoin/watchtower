@@ -203,11 +203,17 @@ async function sendNotifications(networkId: string) {
         timeSince = locale.startsWith("es") ? "ahora mismo" : "just now";
       }
 
+      // Get notification body with proper time phrase
+      const useHace = locale.startsWith("es") && timeSince !== "ahora mismo";
+      const useAgo = !locale.startsWith("es") && timeSince !== "just now";
+      
       // Get notification body
       const body = getMessage(locale, "vaultAccessBody", {
         vaultNumber: notification.vaultNumber,
         walletName: notification.walletName,
         timeSince: timeSince,
+        timePrefix: useHace ? "hace " : "",
+        timeSuffix: useAgo ? " ago" : "",
       });
 
       // Send notification
