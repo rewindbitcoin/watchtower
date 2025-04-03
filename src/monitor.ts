@@ -199,9 +199,9 @@ async function sendNotifications(networkId: string) {
       const timeSince = formatTimeSince(
         (notification.firstAttemptAt || Math.floor(Date.now() / 1000)) * 1000,
         locale,
-        isFirstNotification
+        isFirstNotification,
       );
-      
+
       // Get notification body
       const body = getMessage(locale, "vaultAccessBody", {
         vaultNumber: notification.vaultNumber,

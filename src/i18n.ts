@@ -87,9 +87,9 @@ export function getMessage(
  * @returns Localized time string with appropriate prefix/suffix
  */
 export function formatTimeSince(
-  timestamp: number, 
-  locale: string, 
-  isFirstNotification: boolean = false
+  timestamp: number,
+  locale: string,
+  isFirstNotification: boolean = false,
 ): string {
   // For first notification, return "just now" or "ahora mismo" based on locale
   if (isFirstNotification) {
