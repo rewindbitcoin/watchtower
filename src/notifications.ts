@@ -22,6 +22,8 @@ export interface NotificationData {
   walletName: string;
   vaultNumber: number;
   txid: string;
+  attemptCount?: number;
+  firstDetectedAt?: number;
 }
 
 export interface NotificationPayload {
