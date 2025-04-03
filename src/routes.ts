@@ -138,7 +138,7 @@ export function registerRoutes(
 
             if (existingNotification) {
               logger.warn(
-                `Attempt to register already accessed vault ${vaultId} on ${networkId} network`,
+                `Skipping already accessed vault ${vaultId} on ${networkId} network`,
                 {
                   pushToken,
                   walletName,
@@ -146,12 +146,8 @@ export function registerRoutes(
                   locale,
                 },
               );
-              await db.exec("ROLLBACK");
-              res.status(409).json({
-                error: "Vault already accessed",
-                message: `Vault ${vaultId} has already been accessed and cannot be registered again.`,
-              });
-              return;
+              // Skip this vault but continue processing others
+              continue;
             }
 
             // Insert notification entry and check if it was actually inserted
