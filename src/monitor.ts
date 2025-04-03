@@ -31,8 +31,8 @@ const logger = createLogger("Monitor");
 const IRREVERSIBLE_THRESHOLD = 4;
 
 // Maximum time to retry push notifications (in milliseconds)
-// Default: 3 days = 3 * 24 * 60 * 60 * 1000 = 259200000 ms
-const MAX_NOTIFICATION_RETRY_MS = 3 * 24 * 60 * 60 * 1000;
+// Default: 7 days = 7 * 24 * 60 * 60 * 1000 = 604800000 ms
+const MAX_NOTIFICATION_RETRY_MS = 7 * 24 * 60 * 60 * 1000;
 
 // In-memory cache of block transactions to avoid redundant network calls
 // Structure: { networkId: { blockHash: string[] } }
