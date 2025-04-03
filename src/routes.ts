@@ -138,7 +138,7 @@ export function registerRoutes(
 
             if (existingNotification) {
               logger.warn(
-                `Skipping already accessed vault ${vaultId} on ${networkId} network`,
+                `Vault ${vaultId} on ${networkId} network is spent and irreversible`,
                 {
                   pushToken,
                   walletName,
@@ -146,8 +146,6 @@ export function registerRoutes(
                   locale,
                 },
               );
-              // Skip this vault but continue processing others
-              continue;
             }
 
             // Insert notification entry and check if it was actually inserted
