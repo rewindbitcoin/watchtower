@@ -144,3 +144,24 @@ export function getAddressesDb(networkId: string) {
   }
   return addressesDbConnections[networkId];
 }
+
+/**
+ * Check if addresses database for a network is initialized
+ * @param networkId The network ID
+ * @returns True if the database is initialized, false otherwise
+ */
+export function hasAddressesDb(networkId: string): boolean {
+  return !!addressesDbConnections[networkId];
+}
+
+/**
+ * Close addresses database connection for a network if it exists
+ * @param networkId The network ID
+ */
+export async function closeAddressesDb(networkId: string): Promise<void> {
+  if (addressesDbConnections[networkId]) {
+    await addressesDbConnections[networkId].close();
+    delete addressesDbConnections[networkId];
+    logger.info(`Addresses database for ${networkId} closed successfully`);
+  }
+}

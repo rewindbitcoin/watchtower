@@ -20,7 +20,7 @@ import { initDb, getDb } from "./db";
 import { registerRoutes } from "./routes";
 import { startMonitoring } from "./monitor";
 import { setRegtestApiUrl } from "./blockchain";
-import { getAddressesDb } from "./commitments";
+import { hasAddressesDb, closeAddressesDb } from "./commitments";
 import fs from "fs";
 import { createLogger } from "./logger";
 
@@ -199,9 +199,10 @@ const server = app.listen(port, async () => {
           // Close main database connection
           await getDb(networkId).close();
 
-          if (requireCommitments)
-            // Close address database connection
-            await getAddressesDb(networkId).close();
+          if (requireCommitments) {
+            // Close address database connection if it exists
+            await closeAddressesDb(networkId);
+          }
 
           logger.info(
             `Database connections for ${networkId} closed successfully`,
