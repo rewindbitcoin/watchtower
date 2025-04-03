@@ -125,6 +125,9 @@ The Watchtower API uses **SQLite** with the following structure:
 | `vaultNumber` | INTEGER | The nth vault created in the wallet (0-based) |
 | `status` | TEXT | Status: 'pending' (not sent yet) or 'sent' |
 | `firstAttemptAt` | INTEGER | Unix timestamp of first notification attempt |
+| `acknowledged` | INTEGER | Whether notification was acknowledged (0=no, 1=yes) |
+| `lastAttemptAt` | INTEGER | Unix timestamp of last notification attempt |
+| `attemptCount` | INTEGER | Number of notification attempts made |
 
 **Vault Transactions Table:**
 | Column | Type | Description |
@@ -206,6 +209,29 @@ commitment verification is enabled.
 - **Purpose:** Checks if the service is running.
 - **Response:** `204 No Content`
 
+### **3️⃣ Acknowledge Notification Receipt**
+
+**`POST /watchtower/ack`** or **`POST /:networkId/watchtower/ack`**
+
+- **Purpose:** Acknowledges receipt of a notification for a specific vault.
+- **URL Parameters:**
+  - `networkId`: The Bitcoin network (`bitcoin`, `testnet`, `tape`, or `regtest`)
+  - If using `/watchtower/ack` without networkId, defaults to `bitcoin` mainnet
+- **Request Body:**
+
+  ```json
+  {
+    "pushToken": "ExponentPushToken[xyz]",
+    "vaultId": "vault123"
+  }
+  ```
+
+- **Responses:**
+  - `200 OK`: Acknowledgment successful
+  - `400 Bad Request`: Invalid input data
+  - `404 Not Found`: No matching notification found
+  - `500 Internal Server Error`: Server error
+
 ---
 
 ## 🔍 Blockchain Monitoring Strategy
@@ -253,6 +279,44 @@ vault is accessed.
     "vaultNumber": 0,
     "txid": "abcdef1234567890abcdef1234567890"
   }
+}
+```
+
+### Notification Retry Schedule
+
+For unacknowledged notifications:
+- First day: Retry every 6 hours
+- After first day: Retry once per day for up to a week
+
+Retry notifications include additional information:
+- Attempt number
+- Time since first detection
+
+**Example Retry Payload:**
+
+```json
+{
+  "to": "ExponentPushToken[xyz]",
+  "title": "Vault Access Alert!",
+  "body": "Your vault vault123 in wallet 'My Bitcoin Wallet' is being accessed! (Attempt 3, first detected 14 hours ago)",
+  "data": {
+    "vaultId": "vault123",
+    "walletName": "My Bitcoin Wallet",
+    "vaultNumber": 0,
+    "txid": "abcdef1234567890abcdef1234567890",
+    "attemptCount": 3,
+    "firstDetectedAt": 1634567890
+  }
+}
+```
+
+To stop receiving retry notifications, the client app should acknowledge receipt:
+
+```bash
+POST /watchtower/ack
+{
+  "pushToken": "ExponentPushToken[xyz]",
+  "vaultId": "vault123"
 }
 ```
 

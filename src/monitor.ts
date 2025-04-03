@@ -132,27 +132,64 @@ async function getBlockTxidsWithCache(
 }
 
 /**
+ * Format time since a timestamp in a human-readable format
+ */
+function formatTimeSince(timestamp: number): string {
+  const now = Date.now();
+  const diffMs = now - timestamp;
+  
+  // Convert to seconds, minutes, hours, days
+  const seconds = Math.floor(diffMs / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+  
+  if (days > 0) {
+    return `${days} day${days > 1 ? 's' : ''}`;
+  } else if (hours > 0) {
+    return `${hours} hour${hours > 1 ? 's' : ''}`;
+  } else if (minutes > 0) {
+    return `${minutes} minute${minutes > 1 ? 's' : ''}`;
+  } else {
+    return `${seconds} second${seconds !== 1 ? 's' : ''}`;
+  }
+}
+
+/**
  * Send notifications for triggered vaults
  */
 async function sendNotifications(networkId: string) {
   const db = getDb(networkId);
+  const now = Math.floor(Date.now() / 1000); // Current time in seconds
 
-  // Get all notifications that need to be sent
+  // Get all notifications that need to be sent or retried
   // Only include notifications that haven't exceeded the retry period
   const maxRetryTime = Math.floor(
     (Date.now() - MAX_NOTIFICATION_RETRY_MS) / 1000,
   );
 
+  // Find notifications that need to be sent or retried
   const notificationsToSend = await db.all(
     `
-    SELECT n.pushToken, n.vaultId, vt.txid, vt.status, n.firstAttemptAt
+    SELECT n.pushToken, n.vaultId, vt.txid, vt.status, 
+           n.firstAttemptAt, n.lastAttemptAt, n.attemptCount, n.acknowledged
     FROM notifications n
     JOIN vault_txids vt ON n.vaultId = vt.vaultId
-    WHERE n.status = 'pending' 
+    WHERE n.acknowledged = 0 
       AND (vt.status = 'reversible' OR vt.status = 'irreversible')
       AND (n.firstAttemptAt > ? OR n.firstAttemptAt IS NULL)
+      AND (
+        -- First attempt
+        n.attemptCount = 0
+        OR
+        -- First day: retry every 6 hours
+        (n.firstAttemptAt > ? AND (? - n.lastAttemptAt) >= 21600)
+        OR
+        -- After first day: retry once per day
+        ((? - n.firstAttemptAt) > 86400 AND (? - n.lastAttemptAt) >= 86400)
+      )
   `,
-    [maxRetryTime],
+    [maxRetryTime, now - 86400, now, now, now],
   );
 
   for (const notification of notificationsToSend) {
@@ -166,21 +203,44 @@ async function sendNotifications(networkId: string) {
       // Set firstAttemptAt if this is the first attempt
       if (notification.firstAttemptAt === null) {
         await db.run(
-          "UPDATE notifications SET firstAttemptAt = strftime('%s','now') WHERE vaultId = ? AND pushToken = ?",
+          "UPDATE notifications SET firstAttemptAt = strftime('%s','now'), lastAttemptAt = strftime('%s','now'), attemptCount = 1 WHERE vaultId = ? AND pushToken = ?",
           [notification.vaultId, notification.pushToken],
         );
+        notification.attemptCount = 1;
+      } else {
+        // Increment attempt count
+        await db.run(
+          "UPDATE notifications SET lastAttemptAt = strftime('%s','now'), attemptCount = attemptCount + 1 WHERE vaultId = ? AND pushToken = ?",
+          [notification.vaultId, notification.pushToken],
+        );
+        notification.attemptCount += 1;
+      }
+
+      // Format time since first detection
+      const timeSinceFirstAttempt = notification.firstAttemptAt 
+        ? formatTimeSince(notification.firstAttemptAt * 1000) 
+        : "just now";
+
+      // Create notification message with attempt information
+      let body = `Your vault ${notification.vaultId} in wallet '${notificationDetails.walletName}' is being accessed!`;
+      
+      // Add attempt information for retries
+      if (notification.attemptCount > 1) {
+        body += ` (Attempt ${notification.attemptCount}, first detected ${timeSinceFirstAttempt} ago)`;
       }
 
       // Send notification
       const success = await sendPushNotification({
         to: notification.pushToken,
         title: "Vault Access Alert!",
-        body: `Your vault ${notification.vaultId} in wallet '${notificationDetails.walletName}' is being accessed!`,
+        body: body,
         data: {
           vaultId: notification.vaultId,
           walletName: notificationDetails.walletName,
           vaultNumber: notificationDetails.vaultNumber,
           txid: notification.txid,
+          attemptCount: notification.attemptCount,
+          firstDetectedAt: notification.firstAttemptAt,
         },
       });
 
@@ -192,7 +252,7 @@ async function sendNotifications(networkId: string) {
         );
 
         logger.info(
-          `Notification sent for vault ${notification.vaultId} to device ${notification.pushToken} (tx status: ${notification.status})`,
+          `Notification sent for vault ${notification.vaultId} to device ${notification.pushToken.substring(0, 10)}... (tx status: ${notification.status}, attempt: ${notification.attemptCount})`,
           {
             walletName: notificationDetails.walletName,
             vaultNumber: notificationDetails.vaultNumber,
@@ -385,7 +445,8 @@ async function monitorTransactions(networkId: string): Promise<void> {
           await db.run(
             `
               UPDATE notifications 
-              SET status = 'pending', firstAttemptAt = NULL
+              SET status = 'pending', firstAttemptAt = NULL, 
+                  lastAttemptAt = NULL, attemptCount = 0
               WHERE vaultId IN (
                 SELECT vaultId FROM vault_txids WHERE txid = ?
               )
