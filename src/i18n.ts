@@ -29,12 +29,14 @@ const messages: Record<Locale, MessageTemplates> = {
   // English translations
   en: {
     vaultAccessTitle: "Vault Access Alert!",
-    vaultAccessBody: "Your vault #{vaultNumber} from wallet \"{walletName}\" is being accessed! Access detected {timeSince} ago.",
+    vaultAccessBody:
+      'Your vault #{vaultNumber} from wallet "{walletName}" is being accessed! Access detected {timeSince} ago.',
   },
   // Spanish translations
   es: {
     vaultAccessTitle: "¡Alerta de Acceso a Bóveda!",
-    vaultAccessBody: "¡Tu bóveda #{vaultNumber} de tu billetera \"{walletName}\" está siendo accedida! Acceso detectado hace {timeSince}.",
+    vaultAccessBody:
+      '¡Tu bóveda #{vaultNumber} de tu billetera "{walletName}" está siendo accedida! Acceso detectado hace {timeSince}.',
   },
 };
 

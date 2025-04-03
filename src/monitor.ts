@@ -200,7 +200,7 @@ async function sendNotifications(networkId: string) {
         timeSince = formatTimeSince(notification.firstAttemptAt * 1000, locale);
       } else {
         // For first notification, use "just now"
-        timeSince = locale.startsWith('es') ? "ahora mismo" : "just now";
+        timeSince = locale.startsWith("es") ? "ahora mismo" : "just now";
       }
 
       // Get notification body
