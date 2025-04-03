@@ -245,12 +245,6 @@ async function sendNotifications(networkId: string) {
       });
 
       if (success) {
-        // Update notification status to 'sent' only if the push was successful
-        await db.run(
-          "UPDATE notifications SET status = 'sent' WHERE vaultId = ? AND pushToken = ?",
-          [notification.vaultId, notification.pushToken],
-        );
-
         logger.info(
           `Notification sent for vault ${notification.vaultId} to device ${notification.pushToken.substring(0, 10)}... (tx status: ${notification.status}, attempt: ${notification.attemptCount})`,
           {
@@ -440,12 +434,12 @@ async function monitorTransactions(networkId: string): Promise<void> {
             tx.txid,
           ]);
 
-          // Reset notifications for this transaction's vaultId back to pending
+          // Reset notifications for this transaction's vaultId
           // so they can be sent again if the transaction reappears
           await db.run(
             `
               UPDATE notifications 
-              SET status = 'pending', firstAttemptAt = NULL, 
+              SET firstAttemptAt = NULL, 
                   lastAttemptAt = NULL, attemptCount = 0
               WHERE vaultId IN (
                 SELECT vaultId FROM vault_txids WHERE txid = ?

@@ -128,10 +128,10 @@ export function registerRoutes(
 
             // Check if this vault has already been notified and transaction is irreversible
             const existingNotification = await db.get(
-              `SELECT n.status 
+              `SELECT n.attemptCount 
                FROM notifications n
                JOIN vault_txids vt ON n.vaultId = vt.vaultId
-               WHERE n.vaultId = ? AND n.status = 'sent' AND vt.status = 'irreversible' 
+               WHERE n.vaultId = ? AND n.attemptCount > 0 AND vt.status = 'irreversible' 
                LIMIT 1`,
               [vaultId],
             );
@@ -155,7 +155,7 @@ export function registerRoutes(
 
             // Insert notification entry and check if it was actually inserted
             const result = await db.run(
-              `INSERT OR IGNORE INTO notifications (pushToken, vaultId, walletName, vaultNumber, status) VALUES (?, ?, ?, ?, 'pending')`,
+              `INSERT OR IGNORE INTO notifications (pushToken, vaultId, walletName, vaultNumber) VALUES (?, ?, ?, ?)`,
               [pushToken, vaultId, walletName, vaultNumber],
             );
 
