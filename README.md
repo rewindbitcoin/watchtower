@@ -10,8 +10,6 @@ detected, the service immediately sends **system-level push notifications** to t
 iOS and Android devices where the RewindBitcoin app is installed, allowing them to take
 action before funds can be moved.
 
-By default, the RewindBitcoin app uses our hosted Watchtower service, but for enhanced privacy, you can also run your own Watchtower instance and configure the app to use it instead.
-
 In practical terms, this means:
 
 - If someone gains access to your wallet (through theft, etc.), the Watchtower notifies you immediately
@@ -19,6 +17,8 @@ In practical terms, this means:
 - The RewindBitcoin app immediately displays emergency action options when you tap on the notification
 - You then have time to execute a "panic transaction" to move funds to your emergency cold storage before the attacker can access them
 - The service works silently in the background, only alerting you when necessary
+
+By default, the RewindBitcoin app uses our hosted Watchtower service, but for enhanced privacy, you can also run your own Watchtower instance and configure the app to use it instead.
 
 ---
 
