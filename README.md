@@ -284,8 +284,16 @@ per vault and maintaining proper notification state.
 
 ## 📩 Push Notifications
 
-The service uses **Expo Push Notifications** to alert users when a monitored
-vault is accessed.
+The service uses **Expo Push Notifications** to deliver critical security alerts directly to users' iOS and Android devices when a monitored vault is accessed. These notifications appear as system-level alert dialogs with warning messages, ensuring users are promptly informed of potential security events.
+
+### Critical Security Alerts
+
+When a vault access attempt is detected, the Watchtower immediately sends a push notification to all registered devices associated with that vault. These notifications:
+
+- Appear as high-priority system dialogs on both iOS and Android devices
+- Display clear warning messages about the vault being accessed
+- Include essential information about which vault is affected
+- Provide context about the wallet and transaction
 
 **Example Payload:**
 
@@ -303,17 +311,17 @@ vault is accessed.
 }
 ```
 
-### Notification Retry Schedule
+### Persistent Notification System
 
-For unacknowledged notifications:
+The Watchtower implements a robust retry mechanism to ensure critical security alerts are not missed:
 
-- First day: Retry every 6 hours
-- After first day: Retry once per day for up to a week
+- **Persistent Retries:** The system periodically retries sending notifications until the user explicitly acknowledges receipt
+- **Escalating Schedule:** 
+  - First day: Retry every 6 hours
+  - After first day: Retry once per day for up to a week
+- **Enhanced Context:** Retry notifications include additional information about when the issue was first detected
 
-Retry notifications include additional information:
-
-- Attempt number
-- Time since first detection
+This persistent approach ensures that even if a user's device is temporarily offline or notifications are missed, they will still be alerted to potential security issues with their vaults.
 
 **Example Retry Payload:**
 
@@ -333,7 +341,9 @@ Retry notifications include additional information:
 }
 ```
 
-To stop receiving retry notifications, the client app should acknowledge receipt:
+### Acknowledging Notifications
+
+To stop receiving retry notifications once the alert has been seen, the client app should acknowledge receipt:
 
 ```bash
 POST /watchtower/ack
@@ -342,6 +352,8 @@ POST /watchtower/ack
   "vaultId": "vault123"
 }
 ```
+
+This acknowledgment system ensures that users are only notified until they've confirmed awareness of the security event.
 
 ---
 
