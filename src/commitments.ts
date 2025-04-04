@@ -33,7 +33,7 @@ const addressesDbConnections: Record<
  * Verify that a commitment transaction is authorized:
  * - Pays to an authorized address
  * - Not already used for a different vault
- * 
+ *
  * @param commitment Hex-encoded transaction
  * @param networkId Network identifier
  * @param dbFolder Folder containing the address database
