@@ -125,6 +125,14 @@ The Watchtower API uses **SQLite** with the following structure:
 | `txid` | TEXT | Primary Key - Transaction ID to monitor |
 | `vaultId` | TEXT | Associated vault ID |
 | `status` | TEXT | Status: 'unchecked', 'unseen', 'reversible', 'irreversible' |
+| `commitmentTxid` | TEXT | The txid of the commitment transaction (when using commitments) |
+
+**Commitments Table:**
+| Column | Type | Description |
+|--------|------|-------------|
+| `txid` | TEXT | Primary Key - Transaction ID of the commitment |
+| `vaultId` | TEXT | Associated vault ID |
+| `created_at` | INTEGER | Unix timestamp when the commitment was registered |
 
 **Network State Table:**
 | Column | Type | Description |
@@ -195,6 +203,9 @@ The language is specified using the `locale` parameter during vault registration
   - This transaction must pay to at least one authorized address
   - Authorized addresses are stored in a separate database (`{networkId}.sqlite`)
   - This prevents spam registrations by requiring a payment to use the service
+  - Each commitment can only be used for one vault ID
+  - When a trigger transaction is detected, it's verified to be spending from the commitment
+  - If the trigger is not spending from the commitment, the alert is not sent
 
 - **Responses:**
   - `200 OK`: Registration successful
@@ -255,6 +266,11 @@ The Watchtower uses an efficient monitoring strategy to minimize API calls:
 
 4. **In-memory caching:** Keep track of checked blocks in memory to avoid
    redundant processing within a session
+
+5. **Commitment verification:** When enabled, ensures that:
+   - Each commitment transaction is only used for one vault
+   - Trigger transactions are actually spending from their associated commitment
+   - Invalid triggers are logged but do not generate notifications
 
 This approach efficiently monitors transactions while handling multiple devices
 per vault and maintaining proper notification state.
