@@ -10,6 +10,8 @@ detected, the service immediately sends **system-level push notifications** to t
 iOS and Android devices where the RewindBitcoin app is installed, allowing them to take
 action before funds can be moved.
 
+By default, the RewindBitcoin app uses our hosted Watchtower service, but for enhanced privacy, you can also run your own Watchtower instance and configure the app to use it instead.
+
 In practical terms, this means:
 
 - If someone gains access to your wallet (through theft, etc.), the Watchtower notifies you immediately
@@ -24,11 +26,24 @@ In practical terms, this means:
 
 ### 📱 For Users
 
-You can run the Watchtower API directly using npx without installing it:
+By default, the RewindBitcoin app uses our hosted Watchtower service. However, for enhanced privacy and control, you can run your own Watchtower instance:
+
+#### Running Your Own Watchtower
+
+You can easily run the Watchtower API directly using npx without installing it:
 
 ```bash
 npx @rewindbitcoin/watchtower
 ```
+
+After starting your own Watchtower, you'll need to configure the RewindBitcoin app to use it:
+
+1. Open the RewindBitcoin app
+2. Go to Settings → Watchtower
+3. Enter your custom Watchtower URL (e.g., `http://192.168.1.10:3000` or `http://your-domain.com`)
+4. Save your settings
+
+Your app will now use your personal Watchtower instance instead of the default service, giving you complete control over your vault monitoring.
 
 #### Command Line Options
 
