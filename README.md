@@ -112,7 +112,7 @@ The Watchtower API uses **SQLite** with the following structure:
 | `pushToken` | TEXT | Device push notification token |
 | `vaultId` | TEXT | Associated vault ID |
 | `walletName` | TEXT | Name of the wallet containing the vault |
-| `vaultNumber` | INTEGER | The nth vault created in the wallet (0-based) |
+| `vaultNumber` | INTEGER | The nth vault created in the wallet |
 | `firstAttemptAt` | INTEGER | Unix timestamp of first notification attempt |
 | `acknowledged` | INTEGER | Whether notification was acknowledged (0=no, 1=yes) |
 | `lastAttemptAt` | INTEGER | Unix timestamp of last notification attempt |
