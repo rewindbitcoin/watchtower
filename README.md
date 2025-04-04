@@ -11,8 +11,8 @@ devices, allowing them to take action before funds can be moved.
 
 In practical terms, this means:
 
-- If someone gains access to your wallet (through theft, extortion, etc.), the Watchtower acts as your last line of defense
-- When an attacker tries to unfreeze your vault, you receive immediate alerts on all your registered devices
+- If someone gains access to your wallet (through theft, extortion, etc.), the Watchtower notifies you immediately
+- When an attacker tries to unfreeze your vault, you receive alerts on all your registered devices
 - You then have time to execute a "panic transaction" to move funds to your emergency cold storage before the attacker can access them
 - The service works silently in the background, only alerting you when necessary
 
