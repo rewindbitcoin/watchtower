@@ -94,9 +94,9 @@ export async function verifyCommitment(
 
     if (candidateAddresses.length === 0) {
       logger.warn(`No valid addresses found in commitment transaction`);
-      return { 
-        isValid: false, 
-        error: "No valid addresses found in commitment transaction" 
+      return {
+        isValid: false,
+        error: "No valid addresses found in commitment transaction",
       };
     }
 
@@ -106,9 +106,9 @@ export async function verifyCommitment(
     // Check if the addresses database exists
     if (!fs.existsSync(addressDbPath)) {
       logger.warn(`Addresses database not found: ${addressDbPath}`);
-      return { 
-        isValid: false, 
-        error: `Addresses database not found: ${addressDbPath}` 
+      return {
+        isValid: false,
+        error: `Addresses database not found: ${addressDbPath}`,
       };
     }
 
