@@ -206,9 +206,7 @@ The language is specified using the `locale` parameter during vault registration
   - This commitment system serves several important purposes:
     - Prevents spam registrations by requiring a real on-chain payment
     - Ensures only legitimate vaults can be registered with the service
-    - Provides cryptographic proof that the trigger transactions are related to the vault
-    - Allows verification that alerts are only sent for genuine vault access attempts
-  - Each commitment can only be used for one vault ID to prevent abuse
+  - Each commitment can only be used for one vault ID
   - When a trigger transaction is detected, it's verified to be spending from the commitment
   - If the trigger is not spending from the commitment, the alert is not sent
   - Note: If you're running your own private watchtower, you can disable this feature
