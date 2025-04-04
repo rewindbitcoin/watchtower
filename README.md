@@ -2,9 +2,15 @@
 
 ## 📌 Overview
 
-The **Watchtower API** is a security monitoring service for the **RewindBitcoin Wallet** that protects users' Bitcoin vaults from unauthorized access. It continuously watches the blockchain for specific transactions that would indicate someone is attempting to unfreeze a vault. When such activity is detected, the service immediately sends **push notifications** to the user's devices, allowing them to take action before funds can be moved.
+The **Watchtower API** is a security monitoring service for the
+**RewindBitcoin Wallet** that protects users' Bitcoin vaults from unauthorized
+access. It continuously watches the blockchain for specific transactions that
+would indicate someone is attempting to unfreeze a vault. When such activity is
+detected, the service immediately sends **push notifications** to the user's
+devices, allowing them to take action before funds can be moved.
 
 In practical terms, this means:
+
 - If someone gains access to your wallet (through theft, extortion, etc.), the Watchtower acts as your last line of defense
 - When an attacker tries to unfreeze your vault, you receive immediate alerts on all your registered devices
 - You then have time to execute a "panic transaction" to move funds to your emergency cold storage before the attacker can access them
