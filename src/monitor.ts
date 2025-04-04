@@ -173,29 +173,28 @@ async function sendNotifications(networkId: string) {
 
   for (const notification of notificationsToSend) {
     try {
-      // Verify commitment if present before sending notification
-      const tx = await db.get(
-        "SELECT txid, commitmentTxid FROM vault_txids WHERE txid = ? AND vaultId = ?",
-        [notification.txid, notification.vaultId]
-      );
-      
-      if (tx && tx.commitmentTxid) {
-        const isValidSpend = await verifyTriggerSpendingCommitment(
-          tx.txid,
-          tx.commitmentTxid,
-          networkId
-        );
-
-        if (!isValidSpend) {
-          logger.warn(
-            `Trigger transaction ${tx.txid} is not spending from commitment ${tx.commitmentTxid} for vault ${notification.vaultId}. Skipping notification.`
-          );
-          continue; // Skip this notification if commitment verification fails
-        }
-      }
-      
       // Set firstAttemptAt if this is the first attempt
       if (notification.firstAttemptAt === null) {
+        // Verify commitment is present before sending 1st notification
+        const tx = await db.get(
+          "SELECT txid, commitmentTxid FROM vault_txids WHERE txid = ? AND vaultId = ?",
+          [notification.txid, notification.vaultId],
+        );
+        if (tx && tx.commitmentTxid) {
+          const isValidSpend = await verifyTriggerSpendingCommitment(
+            tx.txid,
+            tx.commitmentTxid,
+            networkId,
+          );
+
+          if (!isValidSpend) {
+            logger.warn(
+              `Trigger transaction ${tx.txid} is not spending from commitment ${tx.commitmentTxid} for vault ${notification.vaultId}. Skipping notification.`,
+            );
+            continue; // Skip this notification if commitment verification fails
+          }
+        }
+
         await db.run(
           "UPDATE notifications SET firstAttemptAt = strftime('%s','now'), lastAttemptAt = strftime('%s','now'), attemptCount = 1 WHERE vaultId = ? AND pushToken = ?",
           [notification.vaultId, notification.pushToken],
