@@ -372,37 +372,22 @@ async function monitorTransactions(networkId: string): Promise<void> {
           WHERE status = 'unseen' OR status = 'reversible'
         `);
 
-        /**
-         * Verify that a transaction is spending from its commitment
-         * @param tx The transaction to verify
-         * @returns true if valid or no commitment required, false if invalid
-         */
-        async function verifyTxCommitment(tx: TxToCheck): Promise<boolean> {
-          if (!tx.commitmentTxid) {
-            return true; // No commitment to verify
-          }
-          
-          const isValidSpend = await verifyTriggerSpendingCommitment(
-            tx.txid,
-            tx.commitmentTxid,
-            networkId
-          );
-          
-          if (!isValidSpend) {
-            logger.warn(
-              `Trigger transaction ${tx.txid} is not spending from commitment ${tx.commitmentTxid} for vault ${tx.vaultId}. Ignoring.`
-            );
-            return false;
-          }
-          
-          return true;
-        }
-
         // Check each transaction
         for (const tx of txsToCheck) {
-          // First verify commitment regardless of where the transaction is found
-          if (!await verifyTxCommitment(tx)) {
-            continue; // Skip this transaction if commitment verification fails
+          // First verify commitment if present
+          if (tx.commitmentTxid) {
+            const isValidSpend = await verifyTriggerSpendingCommitment(
+              tx.txid,
+              tx.commitmentTxid,
+              networkId
+            );
+            
+            if (!isValidSpend) {
+              logger.warn(
+                `Trigger transaction ${tx.txid} is not spending from commitment ${tx.commitmentTxid} for vault ${tx.vaultId}. Ignoring.`
+              );
+              continue; // Skip this transaction if commitment verification fails
+            }
           }
           
           if (blockTxids.includes(tx.txid)) {
