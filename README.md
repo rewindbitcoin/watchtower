@@ -198,14 +198,21 @@ The language is specified using the `locale` parameter during vault registration
 - **Commitment Verification:**
 
   - When enabled with `--with-commitments` flag, each vault registration
-    requires a valid commitment
-  - The `commitment` field contains a hex-encoded Bitcoin transaction
-  - This transaction must pay to at least one authorized address
-  - Authorized addresses are stored in a separate database (`{networkId}.sqlite`)
-  - This prevents spam registrations by requiring a payment to use the service
-  - Each commitment can only be used for one vault ID
+    requires a valid commitment transaction
+  - The `commitment` is the actual transaction that created the vault on the blockchain
+  - This transaction pays a small fee to an authorized service address
+  - The transactions being monitored by the watchtower are those that spend from this commitment
+    (i.e., transactions that initiate the unfreezing of a vault)
+  - This commitment system serves several important purposes:
+    - Prevents spam registrations by requiring a real on-chain payment
+    - Ensures only legitimate vaults can be registered with the service
+    - Provides cryptographic proof that the trigger transactions are related to the vault
+    - Allows verification that alerts are only sent for genuine vault access attempts
+  - Each commitment can only be used for one vault ID to prevent abuse
   - When a trigger transaction is detected, it's verified to be spending from the commitment
   - If the trigger is not spending from the commitment, the alert is not sent
+  - Note: If you're running your own private watchtower, you can disable this feature
+    as long as you don't make your service publicly available
 
 - **Responses:**
   - `200 OK`: Registration successful
