@@ -36,7 +36,7 @@ const messages: Record<Locale, MessageTemplates> = {
   es: {
     vaultAccessTitle: "Acceso a Bóveda Detectado",
     vaultAccessBody:
-      'Bóveda #{vaultNumber} de la Billetera "{walletName}" activada hace {timeSince}.',
+      'Bóveda #{vaultNumber} de la Billetera "{walletName}" activada {timeSince}.',
   },
 };
 
