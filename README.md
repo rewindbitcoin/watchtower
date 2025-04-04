@@ -26,7 +26,7 @@ By default, the RewindBitcoin app uses our hosted Watchtower service, but for en
 
 ### 📱 For Users
 
-By default, the RewindBitcoin app uses our hosted Watchtower service. However, for enhanced privacy and control, you can run your own Watchtower instance:
+If you prefer to run your own Watchtower for enhanced privacy and control over your vault monitoring data, you can easily set it up:
 
 #### Running Your Own Watchtower
 
