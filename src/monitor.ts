@@ -25,14 +25,6 @@ import { createLogger } from "./logger";
 import { getMessage, formatTimeSince } from "./i18n";
 import { verifyTriggerSpendingCommitment } from "./commitments";
 
-// Create a type for transaction objects
-interface TxToCheck {
-  txid: string;
-  status: string;
-  vaultId: string;
-  commitmentTxid?: string;
-}
-
 // Create logger for this module
 const logger = createLogger("Monitor");
 
@@ -379,17 +371,17 @@ async function monitorTransactions(networkId: string): Promise<void> {
             const isValidSpend = await verifyTriggerSpendingCommitment(
               tx.txid,
               tx.commitmentTxid,
-              networkId
+              networkId,
             );
-            
+
             if (!isValidSpend) {
               logger.warn(
-                `Trigger transaction ${tx.txid} is not spending from commitment ${tx.commitmentTxid} for vault ${tx.vaultId}. Ignoring.`
+                `Trigger transaction ${tx.txid} is not spending from commitment ${tx.commitmentTxid} for vault ${tx.vaultId}. Ignoring.`,
               );
-              continue; // Skip this transaction if commitment verification fails
+              continue; // Skip this tx if commitment verification fails
             }
           }
-          
+
           if (blockTxids.includes(tx.txid)) {
             // Transaction found in this block
             const confirmations = currentHeight - height + 1;
