@@ -14,7 +14,7 @@ In practical terms, this means:
 
 - If someone gains access to your wallet (through theft, etc.), the Watchtower notifies you immediately
 - When an attacker tries to unfreeze your vault, you receive alerts on all your registered devices as high-priority system notifications
-- The RewindBitcoin app updates automatically to provide quick action options on user notification click
+- The RewindBitcoin app immediately displays emergency action options when you tap on the notification
 - You then have time to execute a "panic transaction" to move funds to your emergency cold storage before the attacker can access them
 - The service works silently in the background, only alerting you when necessary
 
