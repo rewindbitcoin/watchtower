@@ -125,11 +125,8 @@ The Watchtower uses an efficient monitoring strategy to minimize API calls:
 4. **In-memory caching:** Keep track of checked blocks in memory to avoid
    redundant processing within a session
 
-5. **Commitment verification:** When enabled, ensures that:
-   - Each commitment transaction is only used for one vault
-   - Trigger transactions are actually spending from their associated commitment
-   - Invalid triggers are logged but do not generate notifications
-   (See the [Commitment Verification](#-commitment-verification) section for more details)
+5. **Commitment verification:** An optional security feature that validates transactions against their original vault creation transaction
+   (See the [Commitment Verification](#-commitment-verification) section for complete details)
 
 This approach efficiently monitors transactions while handling multiple devices
 per vault and maintaining proper notification state.
