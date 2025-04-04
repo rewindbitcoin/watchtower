@@ -164,13 +164,13 @@ commitment verification is enabled.
     "vaults": [
       {
         "vaultId": "vault123",
-        "vaultNumber": 0,
+        "vaultNumber": 1,
         "triggerTxIds": ["txid1", "txid2"],
         "commitment": "0200000001abcdef..." // Optional with --with-commitments
       },
       {
         "vaultId": "vault456",
-        "vaultNumber": 1,
+        "vaultNumber": 2,
         "triggerTxIds": ["txid3", "txid4"],
         "commitment": "0200000001ghijkl..." // Optional
       }
@@ -276,7 +276,7 @@ vault is accessed.
   "data": {
     "vaultId": "vault123",
     "walletName": "My Bitcoin Wallet",
-    "vaultNumber": 0,
+    "vaultNumber": 1,
     "txid": "abcdef1234567890abcdef1234567890"
   }
 }
@@ -304,7 +304,7 @@ Retry notifications include additional information:
   "data": {
     "vaultId": "vault123",
     "walletName": "My Bitcoin Wallet",
-    "vaultNumber": 0,
+    "vaultNumber": 1,
     "txid": "abcdef1234567890abcdef1234567890",
     "attemptCount": 3,
     "firstDetectedAt": 1634567890
