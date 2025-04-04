@@ -88,7 +88,7 @@ By default, the watchtower monitors these networks:
 
 - `bitcoin`
 - `testnet`
-- `tape`
+- [`tape`](https://tape.rewindbitcoin.com/) (Rewind Bitcoin's own test network)
 
 The `regtest` network is disabled by default and must be explicitly enabled with
 a valid Esplora API URL.
