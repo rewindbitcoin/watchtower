@@ -125,7 +125,11 @@ The Watchtower uses an efficient monitoring strategy to minimize API calls:
 4. **In-memory caching:** Keep track of checked blocks in memory to avoid
    redundant processing within a session
 
-5. \*\*Commitment verification
+5. **Commitment verification:** When enabled, ensures that:
+   - Each commitment transaction is only used for one vault
+   - Trigger transactions are actually spending from their associated commitment
+   - Invalid triggers are logged but do not generate notifications
+   (See the [Commitment Verification](#-commitment-verification) section for more details)
 
 This approach efficiently monitors transactions while handling multiple devices
 per vault and maintaining proper notification state.
@@ -213,7 +217,7 @@ This persistent approach ensures that even if a user's device is temporarily off
 
 ### Acknowledging Notifications
 
-To stop receiving retry notifications once the alert has been seen, the client app should acknowledge receipt:
+To stop receiving retry notifications once the alert has been seen, the client app should acknowledge receipt using the [Acknowledge Notification Receipt](#acknowledge-notification-receipt) API endpoint:
 
 ```bash
 POST /watchtower/ack
@@ -228,6 +232,8 @@ This acknowledgment system ensures that users are only notified until they've co
 ---
 
 ## 📡 API Endpoints
+
+The Watchtower provides a simple REST API for registering vaults and acknowledging notifications. Below are the available endpoints:
 
 ### Register Vaults to Be Monitored
 
@@ -361,3 +367,5 @@ commitment verification is enabled.
 The **Watchtower API** efficiently tracks Bitcoin transactions related to vaults
 and notifies users when their funds are accessed. It is designed to minimize
 redundant API calls and maximize efficiency in blockchain polling.
+
+By combining [commitment verification](#-commitment-verification), [efficient blockchain monitoring](#-blockchain-monitoring-strategy), and [persistent push notifications](#-push-notifications), the Watchtower provides a robust security layer for Bitcoin vault users.
