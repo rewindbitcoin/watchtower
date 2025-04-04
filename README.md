@@ -316,7 +316,7 @@ When a vault access attempt is detected, the Watchtower immediately sends a push
 The Watchtower implements a robust retry mechanism to ensure critical security alerts are not missed:
 
 - **Persistent Retries:** The system periodically retries sending notifications until the user explicitly acknowledges receipt
-- **Escalating Schedule:** 
+- **Escalating Schedule:**
   - First day: Retry every 6 hours
   - After first day: Retry once per day for up to a week
 - **Enhanced Context:** Retry notifications include additional information about when the issue was first detected
