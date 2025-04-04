@@ -51,35 +51,6 @@ npx @rewindbitcoin/watchtower --db-folder /path/to/database
 npx @rewindbitcoin/watchtower --help
 ```
 
-### 💻 For Developers
-
-If you want to modify or contribute to the Watchtower API:
-
-#### 1️⃣ Clone and Install Dependencies
-
-```bash
-git clone https://github.com/rewindbitcoin/watchtower.git
-cd watchtower
-npm install
-```
-
-#### 2️⃣ Development Mode
-
-```bash
-# Run in development mode
-npx ts-node src/index.ts
-```
-
-#### 3️⃣ Build from Source
-
-```bash
-# Build the project
-npm run build
-
-# Run the built version
-npm start
-```
-
 #### Network Monitoring
 
 If no port is specified, a random available port will be used and displayed in
@@ -93,6 +64,35 @@ By default, the watchtower monitors these networks:
 
 The `regtest` network is disabled by default and must be explicitly enabled with
 a valid Esplora API URL.
+
+### 💻 For Developers
+
+If you want to modify or contribute to the Watchtower API:
+
+#### Clone and Install Dependencies
+
+```bash
+git clone https://github.com/rewindbitcoin/watchtower.git
+cd watchtower
+npm install
+```
+
+#### Development Mode
+
+```bash
+# Run in development mode
+npx ts-node src/index.ts
+```
+
+#### Build from Source
+
+```bash
+# Build the project
+npm run build
+
+# Run the built version
+npm start
+```
 
 #### Publishing (for maintainers)
 
