@@ -103,56 +103,6 @@ npm publish
 
 ---
 
-## 🗃 Database Schema
-
-The Watchtower API uses **SQLite** with the following structure:
-
-**Notifications Table:**
-| Column | Type | Description |
-|----------|------|-------------|
-| `pushToken` | TEXT | Device push notification token |
-| `vaultId` | TEXT | Associated vault ID |
-| `walletName` | TEXT | Name of the wallet containing the vault |
-| `vaultNumber` | INTEGER | The nth vault created in the wallet |
-| `firstAttemptAt` | INTEGER | Unix timestamp of first notification attempt |
-| `acknowledged` | INTEGER | Whether notification was acknowledged (0=no, 1=yes) |
-| `lastAttemptAt` | INTEGER | Unix timestamp of last notification attempt |
-| `attemptCount` | INTEGER | Number of notification attempts made |
-| `locale` | TEXT | User's preferred language (default: 'en') |
-
-**Vault Transactions Table:**
-| Column | Type | Description |
-|--------|------|-------------|
-| `txid` | TEXT | Primary Key - Transaction ID to monitor |
-| `vaultId` | TEXT | Associated vault ID |
-| `status` | TEXT | Status: 'unchecked', 'unseen', 'reversible', 'irreversible' |
-| `commitmentTxid` | TEXT | The txid of the commitment transaction (when using commitments) |
-
-**Commitments Table:**
-| Column | Type | Description |
-|--------|------|-------------|
-| `txid` | TEXT | Primary Key - Transaction ID of the commitment |
-| `vaultId` | TEXT | Associated vault ID |
-| `created_at` | INTEGER | Unix timestamp when the commitment was registered |
-
-**Network State Table:**
-| Column | Type | Description |
-|--------|------|-------------|
-| `id` | INTEGER | Primary Key (always 1) |
-| `last_checked_height` | INTEGER | Last block height that was checked |
-
-**Authorized Addresses Table (in separate database):**
-| Column | Type | Description |
-|--------|------|-------------|
-| `address` | TEXT | Primary Key - Btc address authorized to use the service |
-| `created_at` | TIMESTAMP | When the address was added to the database |
-
-This table is stored in a separate database file (`{networkId}.sqlite`) and is
-managed by another process. The watchtower only reads from this database when
-commitment verification is enabled.
-
----
-
 ## 🔐 Commitment Verification
 
 The Watchtower API uses a commitment verification system to ensure security and prevent abuse:
@@ -170,6 +120,95 @@ The Watchtower API uses a commitment verification system to ensure security and 
 - If the trigger is not spending from the commitment, the alert is not sent
 - Note: If you're running your own private watchtower, you can disable this feature
   as long as you don't make your service publicly available
+
+### Register Vaults to Be Monitored
+
+**`POST /watchtower/register`** or **`POST /:networkId/watchtower/register`**
+
+- **Purpose:** Registers vaults and associates them with a push notification token.
+- **URL Parameters:**
+  - `networkId`: The Bitcoin network (`bitcoin`, `testnet`, `tape`, or `regtest`)
+  - If using `/watchtower/register` without networkId, defaults to `bitcoin` mainnet
+- **Request Body:**
+
+  ```json
+  {
+    "pushToken": "ExponentPushToken[xyz]",
+    "walletName": "My Bitcoin Wallet",
+    "locale": "es", // Optional, defaults to "en"
+    "vaults": [
+      {
+        "vaultId": "vault123",
+        "vaultNumber": 1,
+        "triggerTxIds": ["txid1", "txid2"],
+        "commitment": "0200000001abcdef..." // Required when commitment verification is enabled
+      },
+      {
+        "vaultId": "vault456",
+        "vaultNumber": 2,
+        "triggerTxIds": ["txid3", "txid4"],
+        "commitment": "0200000001ghijkl..." // Required when commitment verification is enabled
+      }
+    ]
+  }
+  ```
+
+### Supported Languages
+
+The Watchtower API currently supports the following languages for notifications:
+
+- English (`en`) - Default
+- Spanish (`es`)
+
+The language is specified using the `locale` parameter during vault registration.
+
+- **Responses:**
+  - `200 OK`: Registration successful
+  - `400 Bad Request`: Invalid input data or commitment transaction
+  - `403 Forbidden`: Commitment transaction doesn't pay to an authorized address
+  - `409 Conflict`: Vault has already been accessed and cannot be registered again
+
+### Health Check
+
+**`GET /generate_204`**
+
+- **Purpose:** Checks if the service is running.
+- **Response:** `204 No Content`
+
+---
+
+## 🔍 Blockchain Monitoring Strategy
+
+The Watchtower uses an efficient monitoring strategy to minimize API calls:
+
+1. **On startup:** Initialize with the last checked block height minus
+   IRREVERSIBLE_THRESHOLD from the database or current height (minus
+   IRREVERSIBLE_THRESHOLD) if starting fresh.
+
+2. **For each monitoring cycle:**
+
+   - Get all new blocks since the last checked height
+   - Check if any pending transactions appear in these blocks
+   - Send notifications to all devices for found transactions
+   - Mark notifications as 'sent' or 'pending'
+   - Update the last checked height
+
+3. **Reorg handling:** Recheck the last 4 blocks (IRREVERSIBLE_THRESHOLD) on each
+   cycle to handle potential blockchain reorganizations
+
+4. **In-memory caching:** Keep track of checked blocks in memory to avoid
+   redundant processing within a session
+
+5. **Commitment verification:** When enabled, ensures that:
+   - Each commitment transaction is only used for one vault
+   - Trigger transactions are actually spending from their associated commitment
+   - Invalid triggers are logged but do not generate notifications
+
+This approach efficiently monitors transactions while handling multiple devices
+per vault and maintaining proper notification state.
+
+---
+
 
 ## 📡 API Endpoints
 
@@ -252,37 +291,53 @@ The language is specified using the `locale` parameter during vault registration
 
 ---
 
-## 🔍 Blockchain Monitoring Strategy
+## 🗃 Database Schema
 
-The Watchtower uses an efficient monitoring strategy to minimize API calls:
+The Watchtower API uses **SQLite** with the following structure:
 
-1. **On startup:** Initialize with the last checked block height minus
-   IRREVERSIBLE_THRESHOLD from the database or current height (minus
-   IRREVERSIBLE_THRESHOLD) if starting fresh.
+**Notifications Table:**
+| Column | Type | Description |
+|----------|------|-------------|
+| `pushToken` | TEXT | Device push notification token |
+| `vaultId` | TEXT | Associated vault ID |
+| `walletName` | TEXT | Name of the wallet containing the vault |
+| `vaultNumber` | INTEGER | The nth vault created in the wallet |
+| `firstAttemptAt` | INTEGER | Unix timestamp of first notification attempt |
+| `acknowledged` | INTEGER | Whether notification was acknowledged (0=no, 1=yes) |
+| `lastAttemptAt` | INTEGER | Unix timestamp of last notification attempt |
+| `attemptCount` | INTEGER | Number of notification attempts made |
+| `locale` | TEXT | User's preferred language (default: 'en') |
 
-2. **For each monitoring cycle:**
+**Vault Transactions Table:**
+| Column | Type | Description |
+|--------|------|-------------|
+| `txid` | TEXT | Primary Key - Transaction ID to monitor |
+| `vaultId` | TEXT | Associated vault ID |
+| `status` | TEXT | Status: 'unchecked', 'unseen', 'reversible', 'irreversible' |
+| `commitmentTxid` | TEXT | The txid of the commitment transaction (when using commitments) |
 
-   - Get all new blocks since the last checked height
-   - Check if any pending transactions appear in these blocks
-   - Send notifications to all devices for found transactions
-   - Mark notifications as 'sent' or 'pending'
-   - Update the last checked height
+**Commitments Table:**
+| Column | Type | Description |
+|--------|------|-------------|
+| `txid` | TEXT | Primary Key - Transaction ID of the commitment |
+| `vaultId` | TEXT | Associated vault ID |
+| `created_at` | INTEGER | Unix timestamp when the commitment was registered |
 
-3. **Reorg handling:** Recheck the last 4 blocks (IRREVERSIBLE_THRESHOLD) on each
-   cycle to handle potential blockchain reorganizations
+**Network State Table:**
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | INTEGER | Primary Key (always 1) |
+| `last_checked_height` | INTEGER | Last block height that was checked |
 
-4. **In-memory caching:** Keep track of checked blocks in memory to avoid
-   redundant processing within a session
+**Authorized Addresses Table (in separate database):**
+| Column | Type | Description |
+|--------|------|-------------|
+| `address` | TEXT | Primary Key - Btc address authorized to use the service |
+| `created_at` | TIMESTAMP | When the address was added to the database |
 
-5. **Commitment verification:** When enabled, ensures that:
-   - Each commitment transaction is only used for one vault
-   - Trigger transactions are actually spending from their associated commitment
-   - Invalid triggers are logged but do not generate notifications
-
-This approach efficiently monitors transactions while handling multiple devices
-per vault and maintaining proper notification state.
-
----
+This table is stored in a separate database file (`{networkId}.sqlite`) and is
+managed by another process. The watchtower only reads from this database when
+commitment verification is enabled.
 
 ## 📩 Push Notifications
 
