@@ -103,80 +103,6 @@ npm publish
 
 ---
 
-## 🔐 Commitment Verification
-
-The Watchtower API uses a commitment verification system to ensure security and prevent abuse:
-
-- When enabled with `--with-commitments` flag, each vault registration requires a valid commitment transaction
-- The `commitment` is the actual transaction that created the vault on the blockchain
-- This transaction pays a small fee to an authorized service address
-- The transactions being monitored by the watchtower are those that spend from this commitment
-  (i.e., transactions that initiate the unfreezing of a vault)
-- This commitment system serves several important purposes:
-  - Prevents spam registrations by requiring a real on-chain payment
-  - Ensures only legitimate vaults can be registered with the service
-- Each commitment can only be used for one vault ID
-- When a trigger transaction is detected, it's verified to be spending from the commitment
-- If the trigger is not spending from the commitment, the alert is not sent
-- Note: If you're running your own private watchtower, you can disable this feature
-  as long as you don't make your service publicly available
-
-### Register Vaults to Be Monitored
-
-**`POST /watchtower/register`** or **`POST /:networkId/watchtower/register`**
-
-- **Purpose:** Registers vaults and associates them with a push notification token.
-- **URL Parameters:**
-  - `networkId`: The Bitcoin network (`bitcoin`, `testnet`, `tape`, or `regtest`)
-  - If using `/watchtower/register` without networkId, defaults to `bitcoin` mainnet
-- **Request Body:**
-
-  ```json
-  {
-    "pushToken": "ExponentPushToken[xyz]",
-    "walletName": "My Bitcoin Wallet",
-    "locale": "es", // Optional, defaults to "en"
-    "vaults": [
-      {
-        "vaultId": "vault123",
-        "vaultNumber": 1,
-        "triggerTxIds": ["txid1", "txid2"],
-        "commitment": "0200000001abcdef..." // Required when commitment verification is enabled
-      },
-      {
-        "vaultId": "vault456",
-        "vaultNumber": 2,
-        "triggerTxIds": ["txid3", "txid4"],
-        "commitment": "0200000001ghijkl..." // Required when commitment verification is enabled
-      }
-    ]
-  }
-  ```
-
-### Supported Languages
-
-The Watchtower API currently supports the following languages for notifications:
-
-- English (`en`) - Default
-- Spanish (`es`)
-
-The language is specified using the `locale` parameter during vault registration.
-
-- **Responses:**
-  - `200 OK`: Registration successful
-  - `400 Bad Request`: Invalid input data or commitment transaction
-  - `403 Forbidden`: Commitment transaction doesn't pay to an authorized address
-  - `409 Conflict`: Vault has already been accessed and cannot be registered again
-
-### Health Check
-
-**`GET /generate_204`**
-
-- **Purpose:** Checks if the service is running.
-- **Response:** `204 No Content`
-
----
-
 ## 🔍 Blockchain Monitoring Strategy
 
 The Watchtower uses an efficient monitoring strategy to minimize API calls:
@@ -199,16 +125,107 @@ The Watchtower uses an efficient monitoring strategy to minimize API calls:
 4. **In-memory caching:** Keep track of checked blocks in memory to avoid
    redundant processing within a session
 
-5. **Commitment verification:** When enabled, ensures that:
-   - Each commitment transaction is only used for one vault
-   - Trigger transactions are actually spending from their associated commitment
-   - Invalid triggers are logged but do not generate notifications
+5. \*\*Commitment verification
 
 This approach efficiently monitors transactions while handling multiple devices
 per vault and maintaining proper notification state.
 
 ---
 
+## 🔐 Commitment Verification
+
+The Watchtower API uses a commitment verification system to prevent abuse:
+
+- When enabled with `--with-commitments` flag, each vault registration requires a valid commitment transaction
+- The `commitment` is the actual transaction that created the vault on the blockchain
+- This transaction should have paid a fee to an authorized service address
+- The transactions being monitored by the watchtower are those that spend from this commitment
+  (i.e., transactions that initiate the unfreezing of a vault)
+- This commitment system serves several important purposes:
+  - Prevents spam registrations by requiring a real on-chain payment
+  - Ensures only legitimate vaults can be registered with the service
+- Each commitment can only be used for one vault ID
+- When a trigger transaction is detected, it's verified to be spending from the commitment
+- If the trigger is not spending from the commitment, the alert is not sent
+- Note: If you're running your own private watchtower, you can disable this feature
+  as long as you don't make your service publicly available
+
+---
+
+## 📩 Push Notifications
+
+The service uses **Expo Push Notifications** to deliver critical security alerts directly to users' iOS and Android devices when a monitored vault is accessed. These notifications appear as system-level alert dialogs with warning messages, ensuring users are promptly informed of potential security events.
+
+### Critical Security Alerts
+
+When a vault access attempt is detected, the Watchtower immediately sends a push notification to all registered devices associated with that vault. These notifications:
+
+- Appear as high-priority system dialogs on both iOS and Android devices
+- Display clear warning messages about the vault being accessed
+- Include essential information about which vault is affected
+- Provide context about the wallet and transaction
+
+**Example Payload:**
+
+```json
+{
+  "to": "ExponentPushToken[xyz]",
+  "title": "Vault Access Alert!",
+  "body": "Your vault vault123 in wallet 'My Bitcoin Wallet' is being accessed!",
+  "data": {
+    "vaultId": "vault123",
+    "walletName": "My Bitcoin Wallet",
+    "vaultNumber": 1,
+    "txid": "abcdef1234567890abcdef1234567890"
+  }
+}
+```
+
+### Persistent Notification System
+
+The Watchtower implements a robust retry mechanism to ensure critical security alerts are not missed:
+
+- **Persistent Retries:** The system periodically retries sending notifications until the user explicitly acknowledges receipt
+- **Escalating Schedule:**
+  - First day: Retry every 6 hours
+  - After first day: Retry once per day for up to a week
+- **Enhanced Context:** Retry notifications include additional information about when the issue was first detected
+
+This persistent approach ensures that even if a user's device is temporarily offline or notifications are missed, they will still be alerted to potential security issues with their vaults.
+
+**Example Retry Payload:**
+
+```json
+{
+  "to": "ExponentPushToken[xyz]",
+  "title": "Vault Access Alert!",
+  "body": "Your vault vault123 in wallet 'My Bitcoin Wallet' is being accessed! (Attempt 3, first detected 14 hours ago)",
+  "data": {
+    "vaultId": "vault123",
+    "walletName": "My Bitcoin Wallet",
+    "vaultNumber": 1,
+    "txid": "abcdef1234567890abcdef1234567890",
+    "attemptCount": 3,
+    "firstDetectedAt": 1634567890
+  }
+}
+```
+
+### Acknowledging Notifications
+
+To stop receiving retry notifications once the alert has been seen, the client app should acknowledge receipt:
+
+```bash
+POST /watchtower/ack
+{
+  "pushToken": "ExponentPushToken[xyz]",
+  "vaultId": "vault123"
+}
+```
+
+This acknowledgment system ensures that users are only notified until they've confirmed awareness of the security event.
+
+---
 
 ## 📡 API Endpoints
 
@@ -338,81 +355,6 @@ The Watchtower API uses **SQLite** with the following structure:
 This table is stored in a separate database file (`{networkId}.sqlite`) and is
 managed by another process. The watchtower only reads from this database when
 commitment verification is enabled.
-
-## 📩 Push Notifications
-
-The service uses **Expo Push Notifications** to deliver critical security alerts directly to users' iOS and Android devices when a monitored vault is accessed. These notifications appear as system-level alert dialogs with warning messages, ensuring users are promptly informed of potential security events.
-
-### Critical Security Alerts
-
-When a vault access attempt is detected, the Watchtower immediately sends a push notification to all registered devices associated with that vault. These notifications:
-
-- Appear as high-priority system dialogs on both iOS and Android devices
-- Display clear warning messages about the vault being accessed
-- Include essential information about which vault is affected
-- Provide context about the wallet and transaction
-
-**Example Payload:**
-
-```json
-{
-  "to": "ExponentPushToken[xyz]",
-  "title": "Vault Access Alert!",
-  "body": "Your vault vault123 in wallet 'My Bitcoin Wallet' is being accessed!",
-  "data": {
-    "vaultId": "vault123",
-    "walletName": "My Bitcoin Wallet",
-    "vaultNumber": 1,
-    "txid": "abcdef1234567890abcdef1234567890"
-  }
-}
-```
-
-### Persistent Notification System
-
-The Watchtower implements a robust retry mechanism to ensure critical security alerts are not missed:
-
-- **Persistent Retries:** The system periodically retries sending notifications until the user explicitly acknowledges receipt
-- **Escalating Schedule:**
-  - First day: Retry every 6 hours
-  - After first day: Retry once per day for up to a week
-- **Enhanced Context:** Retry notifications include additional information about when the issue was first detected
-
-This persistent approach ensures that even if a user's device is temporarily offline or notifications are missed, they will still be alerted to potential security issues with their vaults.
-
-**Example Retry Payload:**
-
-```json
-{
-  "to": "ExponentPushToken[xyz]",
-  "title": "Vault Access Alert!",
-  "body": "Your vault vault123 in wallet 'My Bitcoin Wallet' is being accessed! (Attempt 3, first detected 14 hours ago)",
-  "data": {
-    "vaultId": "vault123",
-    "walletName": "My Bitcoin Wallet",
-    "vaultNumber": 1,
-    "txid": "abcdef1234567890abcdef1234567890",
-    "attemptCount": 3,
-    "firstDetectedAt": 1634567890
-  }
-}
-```
-
-### Acknowledging Notifications
-
-To stop receiving retry notifications once the alert has been seen, the client app should acknowledge receipt:
-
-```bash
-POST /watchtower/ack
-{
-  "pushToken": "ExponentPushToken[xyz]",
-  "vaultId": "vault123"
-}
-```
-
-This acknowledgment system ensures that users are only notified until they've confirmed awareness of the security event.
-
----
 
 ## 🎯 Summary
 
