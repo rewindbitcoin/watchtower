@@ -173,6 +173,27 @@ async function sendNotifications(networkId: string) {
 
   for (const notification of notificationsToSend) {
     try {
+      // Verify commitment if present before sending notification
+      const tx = await db.get(
+        "SELECT txid, commitmentTxid FROM vault_txids WHERE txid = ? AND vaultId = ?",
+        [notification.txid, notification.vaultId]
+      );
+      
+      if (tx && tx.commitmentTxid) {
+        const isValidSpend = await verifyTriggerSpendingCommitment(
+          tx.txid,
+          tx.commitmentTxid,
+          networkId
+        );
+
+        if (!isValidSpend) {
+          logger.warn(
+            `Trigger transaction ${tx.txid} is not spending from commitment ${tx.commitmentTxid} for vault ${notification.vaultId}. Skipping notification.`
+          );
+          continue; // Skip this notification if commitment verification fails
+        }
+      }
+      
       // Set firstAttemptAt if this is the first attempt
       if (notification.firstAttemptAt === null) {
         await db.run(
@@ -366,22 +387,6 @@ async function monitorTransactions(networkId: string): Promise<void> {
 
         // Check each transaction
         for (const tx of txsToCheck) {
-          // First verify commitment if present
-          if (tx.commitmentTxid) {
-            const isValidSpend = await verifyTriggerSpendingCommitment(
-              tx.txid,
-              tx.commitmentTxid,
-              networkId,
-            );
-
-            if (!isValidSpend) {
-              logger.warn(
-                `Trigger transaction ${tx.txid} is not spending from commitment ${tx.commitmentTxid} for vault ${tx.vaultId}. Ignoring.`,
-              );
-              continue; // Skip this tx if commitment verification fails
-            }
-          }
-
           if (blockTxids.includes(tx.txid)) {
             // Transaction found in this block
             const confirmations = currentHeight - height + 1;
