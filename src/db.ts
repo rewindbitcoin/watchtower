@@ -52,7 +52,6 @@ export async function initDb(dbPath: string, networkId: string) {
     CREATE TABLE IF NOT EXISTS commitments (
       txid TEXT PRIMARY KEY,
       vaultId TEXT NOT NULL,
-      rawTx TEXT NOT NULL,
       created_at INTEGER DEFAULT (strftime('%s','now'))
     );
     

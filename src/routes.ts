@@ -127,8 +127,8 @@ export function registerRoutes(
               // Store the commitment in the database
               const commitmentTxid = verificationResult.txid!;
               await db.run(
-                "INSERT OR IGNORE INTO commitments (txid, vaultId, rawTx) VALUES (?, ?, ?)",
-                [commitmentTxid, vaultId, commitment]
+                "INSERT OR IGNORE INTO commitments (txid, vaultId) VALUES (?, ?)",
+                [commitmentTxid, vaultId]
               );
               
               logger.info(
