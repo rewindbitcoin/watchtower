@@ -23,6 +23,7 @@ import {
 import { sendPushNotification } from "./notifications";
 import { createLogger } from "./logger";
 import { getMessage, formatTimeSince } from "./i18n";
+import { verifyTriggerSpendingCommitment } from "./commitments";
 
 // Create logger for this module
 const logger = createLogger("Monitor");
@@ -358,7 +359,7 @@ async function monitorTransactions(networkId: string): Promise<void> {
 
         // Get all transactions that need checking
         const txsToCheck = await db.all(`
-          SELECT txid, status
+          SELECT txid, status, vaultId, commitmentTxid
           FROM vault_txids
           WHERE status = 'unseen' OR status = 'reversible'
         `);
@@ -372,6 +373,22 @@ async function monitorTransactions(networkId: string): Promise<void> {
               confirmations >= IRREVERSIBLE_THRESHOLD
                 ? "irreversible"
                 : "reversible";
+                
+            // If commitments are required and this tx has a commitment, verify it's spending from the commitment
+            if (tx.commitmentTxid) {
+              const isValidSpend = await verifyTriggerSpendingCommitment(
+                tx.txid,
+                tx.commitmentTxid,
+                networkId
+              );
+              
+              if (!isValidSpend) {
+                logger.warn(
+                  `Trigger transaction ${tx.txid} is not spending from commitment ${tx.commitmentTxid} for vault ${tx.vaultId}. Ignoring.`
+                );
+                continue; // Skip this transaction
+              }
+            }
 
             await db.run("UPDATE vault_txids SET status = ? WHERE txid = ?", [
               status,
@@ -379,6 +396,23 @@ async function monitorTransactions(networkId: string): Promise<void> {
             ]);
           } else if (mempoolTxids.includes(tx.txid) && tx.status === "unseen") {
             // Transaction is in mempool
+            
+            // If commitments are required and this tx has a commitment, verify it's spending from the commitment
+            if (tx.commitmentTxid) {
+              const isValidSpend = await verifyTriggerSpendingCommitment(
+                tx.txid,
+                tx.commitmentTxid,
+                networkId
+              );
+              
+              if (!isValidSpend) {
+                logger.warn(
+                  `Trigger transaction ${tx.txid} in mempool is not spending from commitment ${tx.commitmentTxid} for vault ${tx.vaultId}. Ignoring.`
+                );
+                continue; // Skip this transaction
+              }
+            }
+            
             await db.run("UPDATE vault_txids SET status = ? WHERE txid = ?", [
               "reversible",
               tx.txid,

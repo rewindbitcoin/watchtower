@@ -107,22 +107,32 @@ export function registerRoutes(
                 return;
               }
 
-              const isValid = await verifyCommitment(
+              const verificationResult = await verifyCommitment(
                 commitment,
                 networkId,
                 dbFolder,
+                vaultId
               );
-              if (!isValid) {
+              
+              if (!verificationResult.isValid) {
                 await db.exec("ROLLBACK");
                 res.status(403).json({
                   error: "Invalid commitment",
-                  message:
+                  message: verificationResult.error || 
                     "The commitment transaction does not pay to an authorized address",
                 });
                 return;
               }
+              
+              // Store the commitment in the database
+              const commitmentTxid = verificationResult.txid!;
+              await db.run(
+                "INSERT OR IGNORE INTO commitments (txid, vaultId, rawTx) VALUES (?, ?, ?)",
+                [commitmentTxid, vaultId, commitment]
+              );
+              
               logger.info(
-                `Valid commitment verified for vault ${vaultId} on ${networkId} network`,
+                `Valid commitment ${commitmentTxid} verified for vault ${vaultId} on ${networkId} network`,
               );
             }
 
@@ -167,10 +177,14 @@ export function registerRoutes(
 
               // Process each transaction ID only if this is a new notification
               // Insert transaction if it doesn't exist yet
+              const commitmentTxid = requireCommitments ? 
+                (await db.get("SELECT txid FROM commitments WHERE vaultId = ?", [vaultId]))?.txid : 
+                null;
+                
               for (const txid of triggerTxIds)
                 await db.run(
-                  "INSERT OR IGNORE INTO vault_txids (txid, vaultId, status) VALUES (?, ?, 'unchecked')",
-                  [txid, vaultId],
+                  "INSERT OR IGNORE INTO vault_txids (txid, vaultId, status, commitmentTxid) VALUES (?, ?, 'unchecked', ?)",
+                  [txid, vaultId, commitmentTxid],
                 );
 
               logger.info(

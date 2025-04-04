@@ -45,7 +45,15 @@ export async function initDb(dbPath: string, networkId: string) {
     CREATE TABLE IF NOT EXISTS vault_txids (
       txid TEXT PRIMARY KEY,
       vaultId TEXT NOT NULL,
-      status TEXT DEFAULT 'unchecked' -- 'unchecked', 'unseen', 'reversible', or 'irreversible'
+      status TEXT DEFAULT 'unchecked', -- 'unchecked', 'unseen', 'reversible', or 'irreversible'
+      commitmentTxid TEXT -- The txid of the commitment transaction
+    );
+    
+    CREATE TABLE IF NOT EXISTS commitments (
+      txid TEXT PRIMARY KEY,
+      vaultId TEXT NOT NULL,
+      rawTx TEXT NOT NULL,
+      created_at INTEGER DEFAULT (strftime('%s','now'))
     );
     
     CREATE TABLE IF NOT EXISTS network_state (

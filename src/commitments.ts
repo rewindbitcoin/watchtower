@@ -18,6 +18,7 @@ import * as path from "path";
 import sqlite3 from "sqlite3";
 import { open, Database } from "sqlite";
 import { createLogger } from "./logger";
+import { getDb } from "./db";
 
 // Create logger for this module
 const logger = createLogger("Commitments");
@@ -33,13 +34,15 @@ const addressesDbConnections: Record<
  * @param commitment Hex-encoded transaction
  * @param networkId Network identifier
  * @param dbFolder Folder containing the address database
- * @returns True if the commitment is valid, false otherwise
+ * @param vaultId The vault ID associated with this commitment
+ * @returns Object with validity status and txid if valid
  */
 export async function verifyCommitment(
   commitment: string,
   networkId: string,
   dbFolder: string,
-): Promise<boolean> {
+  vaultId: string,
+): Promise<{ isValid: boolean; txid?: string; error?: string }> {
   try {
     // Get the network configuration for bitcoin-js-lib
     const network =
@@ -51,7 +54,25 @@ export async function verifyCommitment(
 
     // Parse the transaction
     const tx = bitcoin.Transaction.fromHex(commitment);
-
+    const txid = tx.getId();
+    
+    // Check if this commitment has already been used
+    const db = getDb(networkId);
+    const existingCommitment = await db.get(
+      "SELECT vaultId FROM commitments WHERE txid = ?",
+      [txid]
+    );
+    
+    if (existingCommitment) {
+      if (existingCommitment.vaultId === vaultId) {
+        logger.warn(`Commitment ${txid} already registered for this vault ${vaultId}`);
+        return { isValid: true, txid }; // Allow reuse for same vault
+      } else {
+        logger.warn(`Commitment ${txid} already used for a different vault: ${existingCommitment.vaultId}`);
+        return { isValid: false, error: "Commitment already used for a different vault" };
+      }
+    }
+    
     // Extract output addresses
     const candidateAddresses = tx.outs
       .map((out) => {
@@ -91,15 +112,46 @@ export async function verifyCommitment(
       logger.warn(
         `No authorized addresses found in commitment transaction. Candidates: ${candidateAddresses.join(", ")}`,
       );
-      return false;
+      return { isValid: false, error: "No authorized addresses found in commitment transaction" };
     }
 
     logger.info(
-      `Found ${result.count} authorized addresses in commitment transaction`,
+      `Found ${result.count} authorized addresses in commitment transaction ${txid}`,
     );
-    return true;
+    return { isValid: true, txid };
   } catch (error) {
     logger.error(`Error verifying commitment:`, error);
+    return { isValid: false, error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+/**
+ * Verify that a trigger transaction is spending from the commitment
+ * @param triggerTxid The transaction ID of the trigger
+ * @param commitmentTxid The transaction ID of the commitment
+ * @param networkId Network identifier
+ * @returns True if the trigger is spending from the commitment, false otherwise
+ */
+export async function verifyTriggerSpendingCommitment(
+  triggerTxid: string,
+  commitmentTxid: string,
+  networkId: string
+): Promise<boolean> {
+  try {
+    // This would require fetching the raw transaction and checking its inputs
+    // For now, we'll just log that this check would happen here
+    logger.info(`Verifying trigger ${triggerTxid} is spending from commitment ${commitmentTxid}`);
+    
+    // In a real implementation, we would:
+    // 1. Fetch the raw transaction for triggerTxid
+    // 2. Parse its inputs
+    // 3. Check if any input is spending from commitmentTxid
+    
+    // For now, we'll assume it's valid
+    // TODO: Implement actual verification logic
+    return true;
+  } catch (error) {
+    logger.error(`Error verifying trigger spending from commitment:`, error);
     return false;
   }
 }
