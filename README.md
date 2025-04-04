@@ -11,18 +11,10 @@ devices, allowing them to take action before funds can be moved.
 
 In practical terms, this means:
 
-- If someone gains access to your wallet (through theft, extortion, etc.), the Watchtower notifies you immediately
+- If someone gains access to your wallet (through theft, etc.), the Watchtower notifies you immediately
 - When an attacker tries to unfreeze your vault, you receive alerts on all your registered devices
 - You then have time to execute a "panic transaction" to move funds to your emergency cold storage before the attacker can access them
 - The service works silently in the background, only alerting you when necessary
-
-## 🚀 Features
-
-- Monitors **vault-related transactions** on the Bitcoin blockchain.
-- Tracks **mempool** and **confirmed transactions** efficiently.
-- Sends **push notifications** via Expo when vaults are accessed.
-- Uses **SQLite** for persistent data storage.
-- Provides a **REST API** for registering vaults and checking service health.
 
 ---
 
@@ -204,7 +196,7 @@ The Watchtower API currently supports the following languages for notifications:
 
 The language is specified using the `locale` parameter during vault registration.
 
-- **Commitment Verification:**
+### Commitment Verification
 
   - When enabled with `--with-commitments` flag, each vault registration
     requires a valid commitment transaction
