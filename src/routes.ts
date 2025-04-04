@@ -111,26 +111,27 @@ export function registerRoutes(
                 commitment,
                 networkId,
                 dbFolder,
-                vaultId
+                vaultId,
               );
-              
+
               if (!verificationResult.isValid) {
                 await db.exec("ROLLBACK");
                 res.status(403).json({
                   error: "Invalid commitment",
-                  message: verificationResult.error || 
-                    "The commitment transaction does not pay to an authorized address",
+                  message:
+                    verificationResult.error ||
+                    "Unknown error while verifying the commitment",
                 });
                 return;
               }
-              
+
               // Store the commitment in the database
               const commitmentTxid = verificationResult.txid!;
               await db.run(
                 "INSERT OR IGNORE INTO commitments (txid, vaultId) VALUES (?, ?)",
-                [commitmentTxid, vaultId]
+                [commitmentTxid, vaultId],
               );
-              
+
               logger.info(
                 `Valid commitment ${commitmentTxid} verified for vault ${vaultId} on ${networkId} network`,
               );
@@ -177,10 +178,15 @@ export function registerRoutes(
 
               // Process each transaction ID only if this is a new notification
               // Insert transaction if it doesn't exist yet
-              const commitmentTxid = requireCommitments ? 
-                (await db.get("SELECT txid FROM commitments WHERE vaultId = ?", [vaultId]))?.txid : 
-                null;
-                
+              const commitmentTxid = requireCommitments
+                ? (
+                    await db.get(
+                      "SELECT txid FROM commitments WHERE vaultId = ?",
+                      [vaultId],
+                    )
+                  )?.txid
+                : null;
+
               for (const txid of triggerTxIds)
                 await db.run(
                   "INSERT OR IGNORE INTO vault_txids (txid, vaultId, status, commitmentTxid) VALUES (?, ?, 'unchecked', ?)",

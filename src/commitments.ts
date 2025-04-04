@@ -144,7 +144,6 @@ export async function verifyCommitment(
   }
 }
 
-
 /**
  * Initialize a connection to the addresses database
  */
