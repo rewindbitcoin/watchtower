@@ -25,6 +25,14 @@ import { createLogger } from "./logger";
 import { getMessage, formatTimeSince } from "./i18n";
 import { verifyTriggerSpendingCommitment } from "./commitments";
 
+// Create a type for transaction objects
+interface TxToCheck {
+  txid: string;
+  status: string;
+  vaultId: string;
+  commitmentTxid?: string;
+}
+
 // Create logger for this module
 const logger = createLogger("Monitor");
 
@@ -364,8 +372,39 @@ async function monitorTransactions(networkId: string): Promise<void> {
           WHERE status = 'unseen' OR status = 'reversible'
         `);
 
+        /**
+         * Verify that a transaction is spending from its commitment
+         * @param tx The transaction to verify
+         * @returns true if valid or no commitment required, false if invalid
+         */
+        async function verifyTxCommitment(tx: TxToCheck): Promise<boolean> {
+          if (!tx.commitmentTxid) {
+            return true; // No commitment to verify
+          }
+          
+          const isValidSpend = await verifyTriggerSpendingCommitment(
+            tx.txid,
+            tx.commitmentTxid,
+            networkId
+          );
+          
+          if (!isValidSpend) {
+            logger.warn(
+              `Trigger transaction ${tx.txid} is not spending from commitment ${tx.commitmentTxid} for vault ${tx.vaultId}. Ignoring.`
+            );
+            return false;
+          }
+          
+          return true;
+        }
+
         // Check each transaction
         for (const tx of txsToCheck) {
+          // First verify commitment regardless of where the transaction is found
+          if (!await verifyTxCommitment(tx)) {
+            continue; // Skip this transaction if commitment verification fails
+          }
+          
           if (blockTxids.includes(tx.txid)) {
             // Transaction found in this block
             const confirmations = currentHeight - height + 1;
@@ -373,22 +412,6 @@ async function monitorTransactions(networkId: string): Promise<void> {
               confirmations >= IRREVERSIBLE_THRESHOLD
                 ? "irreversible"
                 : "reversible";
-                
-            // If commitments are required and this tx has a commitment, verify it's spending from the commitment
-            if (tx.commitmentTxid) {
-              const isValidSpend = await verifyTriggerSpendingCommitment(
-                tx.txid,
-                tx.commitmentTxid,
-                networkId
-              );
-              
-              if (!isValidSpend) {
-                logger.warn(
-                  `Trigger transaction ${tx.txid} is not spending from commitment ${tx.commitmentTxid} for vault ${tx.vaultId}. Ignoring.`
-                );
-                continue; // Skip this transaction
-              }
-            }
 
             await db.run("UPDATE vault_txids SET status = ? WHERE txid = ?", [
               status,
@@ -396,23 +419,6 @@ async function monitorTransactions(networkId: string): Promise<void> {
             ]);
           } else if (mempoolTxids.includes(tx.txid) && tx.status === "unseen") {
             // Transaction is in mempool
-            
-            // If commitments are required and this tx has a commitment, verify it's spending from the commitment
-            if (tx.commitmentTxid) {
-              const isValidSpend = await verifyTriggerSpendingCommitment(
-                tx.txid,
-                tx.commitmentTxid,
-                networkId
-              );
-              
-              if (!isValidSpend) {
-                logger.warn(
-                  `Trigger transaction ${tx.txid} in mempool is not spending from commitment ${tx.commitmentTxid} for vault ${tx.vaultId}. Ignoring.`
-                );
-                continue; // Skip this transaction
-              }
-            }
-            
             await db.run("UPDATE vault_txids SET status = ? WHERE txid = ?", [
               "reversible",
               tx.txid,
