@@ -153,9 +153,27 @@ commitment verification is enabled.
 
 ---
 
+## 🔐 Commitment Verification
+
+The Watchtower API uses a commitment verification system to ensure security and prevent abuse:
+
+- When enabled with `--with-commitments` flag, each vault registration requires a valid commitment transaction
+- The `commitment` is the actual transaction that created the vault on the blockchain
+- This transaction pays a small fee to an authorized service address
+- The transactions being monitored by the watchtower are those that spend from this commitment
+  (i.e., transactions that initiate the unfreezing of a vault)
+- This commitment system serves several important purposes:
+  - Prevents spam registrations by requiring a real on-chain payment
+  - Ensures only legitimate vaults can be registered with the service
+- Each commitment can only be used for one vault ID
+- When a trigger transaction is detected, it's verified to be spending from the commitment
+- If the trigger is not spending from the commitment, the alert is not sent
+- Note: If you're running your own private watchtower, you can disable this feature
+  as long as you don't make your service publicly available
+
 ## 📡 API Endpoints
 
-### **1️⃣ Register Vaults to Be Monitored**
+### Register Vaults to Be Monitored
 
 **`POST /watchtower/register`** or **`POST /:networkId/watchtower/register`**
 
@@ -175,13 +193,13 @@ commitment verification is enabled.
         "vaultId": "vault123",
         "vaultNumber": 1,
         "triggerTxIds": ["txid1", "txid2"],
-        "commitment": "0200000001abcdef..." // Optional with --with-commitments
+        "commitment": "0200000001abcdef..." // Required when commitment verification is enabled
       },
       {
         "vaultId": "vault456",
         "vaultNumber": 2,
         "triggerTxIds": ["txid3", "txid4"],
-        "commitment": "0200000001ghijkl..." // Optional
+        "commitment": "0200000001ghijkl..." // Required when commitment verification is enabled
       }
     ]
   }
@@ -196,37 +214,20 @@ The Watchtower API currently supports the following languages for notifications:
 
 The language is specified using the `locale` parameter during vault registration.
 
-### Commitment Verification
-
-  - When enabled with `--with-commitments` flag, each vault registration
-    requires a valid commitment transaction
-  - The `commitment` is the actual transaction that created the vault on the blockchain
-  - This transaction pays a small fee to an authorized service address
-  - The transactions being monitored by the watchtower are those that spend from this commitment
-    (i.e., transactions that initiate the unfreezing of a vault)
-  - This commitment system serves several important purposes:
-    - Prevents spam registrations by requiring a real on-chain payment
-    - Ensures only legitimate vaults can be registered with the service
-  - Each commitment can only be used for one vault ID
-  - When a trigger transaction is detected, it's verified to be spending from the commitment
-  - If the trigger is not spending from the commitment, the alert is not sent
-  - Note: If you're running your own private watchtower, you can disable this feature
-    as long as you don't make your service publicly available
-
 - **Responses:**
   - `200 OK`: Registration successful
   - `400 Bad Request`: Invalid input data or commitment transaction
   - `403 Forbidden`: Commitment transaction doesn't pay to an authorized address
   - `409 Conflict`: Vault has already been accessed and cannot be registered again
 
-### **2️⃣ Health Check**
+### Health Check
 
 **`GET /generate_204`**
 
 - **Purpose:** Checks if the service is running.
 - **Response:** `204 No Content`
 
-### **3️⃣ Acknowledge Notification Receipt**
+### Acknowledge Notification Receipt
 
 **`POST /watchtower/ack`** or **`POST /:networkId/watchtower/ack`**
 
