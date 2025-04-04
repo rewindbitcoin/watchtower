@@ -30,14 +30,17 @@ const addressesDbConnections: Record<
 > = {};
 
 /**
- * Verify that a commitment transaction pays to an authorized address
+ * Verify that a commitment transaction is authorized:
+ * - Pays to an authorized address
+ * - Not already used for a different vault
+ * 
  * @param commitment Hex-encoded transaction
  * @param networkId Network identifier
  * @param dbFolder Folder containing the address database
  * @param vaultId The vault ID associated with this commitment
- * @returns Object with validity status and txid if valid
+ * @returns Object with authorization status and txid if authorized
  */
-export async function verifyCommitment(
+export async function verifyCommitmentAuthorization(
   commitment: string,
   networkId: string,
   dbFolder: string,

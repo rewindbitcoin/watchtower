@@ -15,7 +15,7 @@
 import { Express, Request, Response } from "express";
 import { getDb } from "./db";
 import { createLogger } from "./logger";
-import { verifyCommitment } from "./commitments";
+import { verifyCommitmentAuthorization } from "./commitments";
 
 // Create logger for this module
 const logger = createLogger("Routes");
@@ -107,7 +107,7 @@ export function registerRoutes(
                 return;
               }
 
-              const verificationResult = await verifyCommitment(
+              const verificationResult = await verifyCommitmentAuthorization(
                 commitment,
                 networkId,
                 dbFolder,
