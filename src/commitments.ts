@@ -144,38 +144,6 @@ export async function verifyCommitment(
   }
 }
 
-/**
- * Verify that a trigger transaction is spending from the commitment
- * @param triggerTxid The transaction ID of the trigger
- * @param commitmentTxid The transaction ID of the commitment
- * @param networkId Network identifier
- * @returns True if the trigger is spending from the commitment, false otherwise
- */
-export async function verifyTriggerSpendingCommitment(
-  triggerTxid: string,
-  commitmentTxid: string,
-  networkId: string,
-): Promise<boolean> {
-  try {
-    // This would require fetching the raw transaction and checking its inputs
-    // For now, we'll just log that this check would happen here
-    logger.info(
-      `Verifying trigger ${triggerTxid} is spending from commitment ${commitmentTxid}`,
-    );
-
-    // In a real implementation, we would:
-    // 1. Fetch the raw transaction for triggerTxid
-    // 2. Parse its inputs
-    // 3. Check if any input is spending from commitmentTxid
-
-    // For now, we'll assume it's valid
-    // TODO: Implement actual verification logic
-    return true;
-  } catch (error) {
-    logger.error(`Error verifying trigger spending from commitment:`, error);
-    return false;
-  }
-}
 
 /**
  * Initialize a connection to the addresses database

@@ -19,11 +19,11 @@ import {
   getBlockTxids,
   getMempoolTxids,
   getTxStatus,
+  verifyTriggerSpendingCommitment,
 } from "./blockchain";
 import { sendPushNotification } from "./notifications";
 import { createLogger } from "./logger";
 import { getMessage, formatTimeSince } from "./i18n";
-import { verifyTriggerSpendingCommitment } from "./commitments";
 
 // Create logger for this module
 const logger = createLogger("Monitor");

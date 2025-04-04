@@ -163,3 +163,96 @@ export async function getTxStatus(txid: string, network: string = "bitcoin") {
     throw error;
   }
 }
+
+/**
+ * Get raw transaction data
+ * @param txid Transaction ID
+ * @param network Network identifier
+ * @returns Raw transaction data
+ */
+export async function getRawTransaction(txid: string, network: string = "bitcoin") {
+  const baseUrl = API_BASE_URLS[network as keyof typeof API_BASE_URLS];
+  try {
+    const response = await fetchWithTimeout(`${baseUrl}/tx/${txid}/raw`);
+    if (!response.ok && response.status !== 404) {
+      throw new Error(
+        `Failed to get raw tx for ${txid}: ${response.statusText}`,
+      );
+    }
+    if (response.status === 404) {
+      return null; // Transaction not found
+    }
+    return response.text(); // Returns hex-encoded transaction
+  } catch (error) {
+    logger.error(`Error fetching raw tx for ${txid} on ${network}`, error);
+    throw error;
+  }
+}
+
+/**
+ * Get transaction details including inputs and outputs
+ * @param txid Transaction ID
+ * @param network Network identifier
+ * @returns Transaction details
+ */
+export async function getTransaction(txid: string, network: string = "bitcoin") {
+  const baseUrl = API_BASE_URLS[network as keyof typeof API_BASE_URLS];
+  try {
+    const response = await fetchWithTimeout(`${baseUrl}/tx/${txid}`);
+    if (!response.ok && response.status !== 404) {
+      throw new Error(
+        `Failed to get tx details for ${txid}: ${response.statusText}`,
+      );
+    }
+    if (response.status === 404) {
+      return null; // Transaction not found
+    }
+    return response.json();
+  } catch (error) {
+    logger.error(`Error fetching tx details for ${txid} on ${network}`, error);
+    throw error;
+  }
+}
+
+/**
+ * Verify that a trigger transaction is spending from the commitment
+ * @param triggerTxid The transaction ID of the trigger
+ * @param commitmentTxid The transaction ID of the commitment
+ * @param networkId Network identifier
+ * @returns True if the trigger is spending from the commitment, false otherwise
+ */
+export async function verifyTriggerSpendingCommitment(
+  triggerTxid: string,
+  commitmentTxid: string,
+  networkId: string,
+): Promise<boolean> {
+  try {
+    logger.info(
+      `Verifying trigger ${triggerTxid} is spending from commitment ${commitmentTxid} on ${networkId}`,
+    );
+
+    // Get the trigger transaction details
+    const triggerTx = await getTransaction(triggerTxid, networkId);
+    
+    if (!triggerTx) {
+      logger.warn(`Trigger transaction ${triggerTxid} not found on ${networkId}`);
+      return false;
+    }
+    
+    // Check if any of the inputs are spending from the commitment transaction
+    const isSpendingFromCommitment = triggerTx.vin.some((input: any) => {
+      return input.txid === commitmentTxid;
+    });
+    
+    if (isSpendingFromCommitment) {
+      logger.info(`Verified: Trigger ${triggerTxid} is spending from commitment ${commitmentTxid}`);
+    } else {
+      logger.warn(`Trigger ${triggerTxid} is NOT spending from commitment ${commitmentTxid}`);
+    }
+    
+    return isSpendingFromCommitment;
+  } catch (error) {
+    logger.error(`Error verifying trigger spending from commitment:`, error);
+    return false;
+  }
+}
