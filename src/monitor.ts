@@ -237,10 +237,10 @@ async function sendNotifications(networkId: string) {
         body: body,
         data: {
           vaultId: notification.vaultId,
-          walletId: notification.walletId, // Added walletId
+          walletId: notification.walletId,
           walletName: notification.walletName,
           vaultNumber: notification.vaultNumber,
-          watchtowerUrl: notification.watchtowerUrl, // Added watchtowerUrl
+          watchtowerUrl: notification.watchtowerUrl,
           txid: notification.txid,
           attemptCount: notification.attemptCount,
           firstDetectedAt: notification.firstAttemptAt,

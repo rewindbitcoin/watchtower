@@ -19,10 +19,10 @@ const logger = createLogger("Notifications");
 
 export interface NotificationData {
   vaultId: string;
-  walletId: string; // Added walletId
+  walletId: string;
   walletName: string;
   vaultNumber: number;
-  watchtowerUrl: string; // Added watchtowerUrl
+  watchtowerUrl: string;
   txid: string;
   attemptCount?: number;
   firstDetectedAt?: number;

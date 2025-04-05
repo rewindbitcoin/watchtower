@@ -37,9 +37,9 @@ export function registerRoutes(
       const {
         pushToken,
         vaults,
-        walletId, // Added walletId
+        walletId,
         walletName,
-        watchtowerUrl, // Added watchtowerUrl
+        watchtowerUrl,
         locale = "en",
       } = req.body;
       try {
@@ -55,9 +55,9 @@ export function registerRoutes(
         if (
           !pushToken ||
           !Array.isArray(vaults) ||
-          !walletId || // Added walletId validation
+          !walletId ||
           !walletName ||
-          !watchtowerUrl // Added watchtowerUrl validation
+          !watchtowerUrl
         ) {
           res.status(400).json({
             error:

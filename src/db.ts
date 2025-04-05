@@ -32,10 +32,10 @@ export async function initDb(dbPath: string, networkId: string) {
     CREATE TABLE IF NOT EXISTS notifications (
       pushToken TEXT NOT NULL,
       vaultId TEXT NOT NULL,
-      walletId TEXT NOT NULL, -- Added walletId
+      walletId TEXT NOT NULL,
       walletName TEXT NOT NULL,
       vaultNumber INTEGER NOT NULL,
-      watchtowerUrl TEXT NOT NULL, -- Added watchtowerUrl
+      watchtowerUrl TEXT NOT NULL,
       firstAttemptAt INTEGER DEFAULT NULL, -- Unix timestamp of first attempt, NULL until first attempt
       acknowledged INTEGER DEFAULT 0, -- 0 = not acknowledged, 1 = acknowledged
       lastAttemptAt INTEGER DEFAULT NULL, -- timestamp of last attempt
