@@ -149,12 +149,12 @@ async function sendNotifications(networkId: string) {
   // Find notifications that need to be sent or retried
   const notificationsToSend = await db.all(
     `
-    SELECT n.pushToken, n.vaultId, vt.txid, vt.status, 
+    SELECT n.pushToken, n.vaultId, vt.txid, vt.status,
            n.firstAttemptAt, n.lastAttemptAt, n.attemptCount, n.acknowledged,
-           n.walletName, n.vaultNumber, n.locale
+           n.walletId, n.walletName, n.vaultNumber, n.watchtowerUrl, n.locale
     FROM notifications n
     JOIN vault_txids vt ON n.vaultId = vt.vaultId
-    WHERE n.acknowledged = 0 
+    WHERE n.acknowledged = 0
       AND (vt.status = 'reversible' OR vt.status = 'irreversible')
       AND (n.firstAttemptAt > ? OR n.firstAttemptAt IS NULL)
       AND (
@@ -237,8 +237,10 @@ async function sendNotifications(networkId: string) {
         body: body,
         data: {
           vaultId: notification.vaultId,
+          walletId: notification.walletId, // Added walletId
           walletName: notification.walletName,
           vaultNumber: notification.vaultNumber,
+          watchtowerUrl: notification.watchtowerUrl, // Added watchtowerUrl
           txid: notification.txid,
           attemptCount: notification.attemptCount,
           firstDetectedAt: notification.firstAttemptAt,
@@ -249,8 +251,10 @@ async function sendNotifications(networkId: string) {
         logger.info(
           `Notification sent for vault ${notification.vaultId} to device ${notification.pushToken.substring(0, 10)}... (tx status: ${notification.status}, attempt: ${notification.attemptCount}, locale: ${locale} [normalized from: ${notification.locale}])`,
           {
+            walletId: notification.walletId,
             walletName: notification.walletName,
             vaultNumber: notification.vaultNumber,
+            watchtowerUrl: notification.watchtowerUrl,
           },
         );
       } else {

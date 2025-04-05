@@ -34,7 +34,14 @@ export function registerRoutes(
     async (req: Request, res: Response): Promise<void> => {
       // Default to bitcoin if no networkId is provided in the path
       const networkId = req.params.networkId || "bitcoin";
-      const { pushToken, vaults, walletName, locale = "en" } = req.body;
+      const {
+        pushToken,
+        vaults,
+        walletId, // Added walletId
+        walletName,
+        watchtowerUrl, // Added watchtowerUrl
+        locale = "en",
+      } = req.body;
       try {
         // Validate network parameter
         if (!["bitcoin", "testnet", "tape", "regtest"].includes(networkId)) {
@@ -45,10 +52,16 @@ export function registerRoutes(
           return;
         }
 
-        if (!pushToken || !Array.isArray(vaults) || !walletName) {
+        if (
+          !pushToken ||
+          !Array.isArray(vaults) ||
+          !walletId || // Added walletId validation
+          !walletName ||
+          !watchtowerUrl // Added watchtowerUrl validation
+        ) {
           res.status(400).json({
             error:
-              "Invalid input data. pushToken, walletName, and vaults array are required",
+              "Invalid input data. pushToken, vaults array, walletId, walletName, and watchtowerUrl are required",
           });
           return;
         }
@@ -152,8 +165,10 @@ export function registerRoutes(
                 `Vault ${vaultId} on ${networkId} network is spent and irreversible`,
                 {
                   pushToken,
+                  walletId,
                   walletName,
                   vaultNumber,
+                  watchtowerUrl,
                   locale,
                 },
               );
@@ -161,8 +176,16 @@ export function registerRoutes(
 
             // Insert notification entry and check if it was actually inserted
             const result = await db.run(
-              `INSERT OR IGNORE INTO notifications (pushToken, vaultId, walletName, vaultNumber, locale) VALUES (?, ?, ?, ?, ?)`,
-              [pushToken, vaultId, walletName, vaultNumber, locale],
+              `INSERT OR IGNORE INTO notifications (pushToken, vaultId, walletId, walletName, vaultNumber, watchtowerUrl, locale) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+              [
+                pushToken,
+                vaultId,
+                walletId,
+                walletName,
+                vaultNumber,
+                watchtowerUrl,
+                locale,
+              ],
             );
 
             // If changes === 0, the entry already existed, so skip processing txids
@@ -171,8 +194,10 @@ export function registerRoutes(
                 `New device registered for vault ${vaultId} on ${networkId} network`,
                 {
                   pushToken,
+                  walletId,
                   walletName,
                   vaultNumber,
+                  watchtowerUrl,
                 },
               );
 
@@ -195,12 +220,12 @@ export function registerRoutes(
 
               logger.info(
                 `Registered vault ${vaultId} with ${triggerTxIds.length} trigger transactions on ${networkId} network`,
-                { walletName, vaultNumber, locale },
+                { walletId, walletName, vaultNumber, watchtowerUrl, locale },
               );
             } else {
               logger.info(
                 `Notification for vault ${vaultId} and push token ${pushToken} already exists on ${networkId} network, skipping txid processing`,
-                { walletName, vaultNumber },
+                { walletId, walletName, vaultNumber, watchtowerUrl },
               );
             }
           }
@@ -208,7 +233,7 @@ export function registerRoutes(
           // Commit the transaction after processing all vaults
           await db.exec("COMMIT");
           logger.info(
-            `Successfully registered ${vaults.length} vaults for wallet "${walletName}" on ${networkId} network`,
+            `Successfully registered ${vaults.length} vaults for wallet "${walletName}" (ID: ${walletId}) on ${networkId} network`,
           );
           res.sendStatus(200);
         } catch (error) {
@@ -216,7 +241,9 @@ export function registerRoutes(
           await db.exec("ROLLBACK");
           logger.error(`Database transaction failed on ${networkId} network`, {
             error: error instanceof Error ? error.message : String(error),
+            walletId,
             walletName,
+            watchtowerUrl,
           });
           throw error;
         }
@@ -226,7 +253,9 @@ export function registerRoutes(
         logger.error(`Error in watchtower/register for ${networkId} network:`, {
           error: errorMessage,
           stack: err instanceof Error ? err.stack : undefined,
+          walletId,
           walletName,
+          watchtowerUrl,
           pushToken: pushToken ? pushToken.substring(0, 10) + "..." : undefined,
         });
         res.status(500).json({ error: "Internal server error" });
