@@ -195,14 +195,17 @@ async function sendNotifications(networkId: string) {
           }
         }
 
-        // Capture the current time for the first detection
         const firstDetectionTimestamp = Math.floor(Date.now() / 1000);
 
         await db.run(
           "UPDATE notifications SET firstAttemptAt = ?, lastAttemptAt = ?, attemptCount = 1 WHERE vaultId = ? AND pushToken = ?",
-          [firstDetectionTimestamp, firstDetectionTimestamp, notification.vaultId, notification.pushToken],
+          [
+            firstDetectionTimestamp,
+            firstDetectionTimestamp,
+            notification.vaultId,
+            notification.pushToken,
+          ],
         );
-        // Update the in-memory object as well for consistency in this cycle
         notification.firstAttemptAt = firstDetectionTimestamp;
         notification.attemptCount = 1;
       } else {
