@@ -311,6 +311,56 @@ The language is specified using the `locale` parameter during vault registration
 - **Purpose:** Checks if the service is running.
 - **Response:** `204 No Content`
 
+### Retrieve Unacknowledged Notifications
+
+**`POST /watchtower/notifications`** or **`POST /:networkId/watchtower/notifications`**
+
+- **Purpose:** Retrieves all unacknowledged notifications for a specific device.
+- **URL Parameters:**
+  - `networkId`: The Bitcoin network (`bitcoin`, `testnet`, `tape`, or `regtest`)
+  - If using `/watchtower/notifications` without networkId, defaults to `bitcoin` mainnet
+- **Request Body:**
+
+  ```json
+  {
+    "pushToken": "ExponentPushToken[xyz]"
+  }
+  ```
+
+- **Response:**
+
+  ```json
+  {
+    "notifications": [
+      {
+        "vaultId": "vault123",
+        "walletId": "wallet_unique_identifier",
+        "walletName": "My Bitcoin Wallet",
+        "vaultNumber": 1,
+        "watchtowerId": "client_provided_unique_id_for_watchtower",
+        "txid": "abcdef1234567890abcdef1234567890",
+        "attemptCount": 3,
+        "firstDetectedAt": 1634567890
+      },
+      {
+        "vaultId": "vault456",
+        "walletId": "wallet_unique_identifier",
+        "walletName": "My Bitcoin Wallet",
+        "vaultNumber": 2,
+        "watchtowerId": "client_provided_unique_id_for_watchtower",
+        "txid": "fedcba0987654321fedcba0987654321",
+        "attemptCount": 1,
+        "firstDetectedAt": 1634567891
+      }
+    ]
+  }
+  ```
+
+- **Responses:**
+  - `200 OK`: Request successful (even if no notifications are found)
+  - `400 Bad Request`: Invalid input data (missing pushToken)
+  - `500 Internal Server Error`: Server error
+
 ### Acknowledge Notification Receipt
 
 **`POST /watchtower/ack`** or **`POST /:networkId/watchtower/ack`**

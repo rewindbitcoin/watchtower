@@ -332,6 +332,79 @@ export function registerRoutes(
   );
 
   /**
+   * POST /watchtower/notifications and /:networkId/watchtower/notifications
+   * Retrieves unacknowledged notifications for a specific push token.
+   */
+  app.post(
+    ["/watchtower/notifications", "/:networkId/watchtower/notifications"],
+    async (req: Request, res: Response): Promise<void> => {
+      // Default to bitcoin if no networkId is provided in the path
+      const networkId = req.params.networkId || "bitcoin";
+      const { pushToken } = req.body;
+
+      try {
+        // Validate network parameter
+        if (!["bitcoin", "testnet", "tape", "regtest"].includes(networkId)) {
+          res.status(400).json({
+            error:
+              "Invalid networkId. Must be 'bitcoin', 'testnet', 'tape', or 'regtest'",
+          });
+          return;
+        }
+
+        if (!pushToken) {
+          res.status(400).json({
+            error: "Invalid input data. pushToken is required in the request body",
+          });
+          return;
+        }
+
+        const db = getDb(networkId);
+
+        // Get all unacknowledged notifications for this push token
+        const notifications = await db.all(
+          `
+          SELECT n.vaultId, n.walletId, n.walletName, n.vaultNumber, n.watchtowerId,
+                 vt.txid, n.attemptCount, n.firstAttemptAt as firstDetectedAt
+          FROM notifications n
+          JOIN vault_txids vt ON n.vaultId = vt.vaultId
+          WHERE n.pushToken = ? 
+            AND n.acknowledged = 0
+            AND (vt.status = 'reversible' OR vt.status = 'irreversible')
+            AND n.attemptCount > 0
+          `,
+          [pushToken]
+        );
+
+        logger.info(
+          `Retrieved ${notifications.length} unacknowledged notifications for device ${pushToken.substring(0, 10)}... on ${networkId} network`
+        );
+
+        res.status(200).json({
+          notifications: notifications.map(notification => ({
+            vaultId: notification.vaultId,
+            walletId: notification.walletId,
+            walletName: notification.walletName,
+            vaultNumber: notification.vaultNumber,
+            watchtowerId: notification.watchtowerId,
+            txid: notification.txid,
+            attemptCount: notification.attemptCount,
+            firstDetectedAt: notification.firstDetectedAt
+          }))
+        });
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        logger.error(`Error in watchtower/notifications for ${networkId} network:`, {
+          error: errorMessage,
+          stack: err instanceof Error ? err.stack : undefined,
+          pushToken: pushToken ? pushToken.substring(0, 10) + "..." : undefined,
+        });
+        res.status(500).json({ error: "Internal server error" });
+      }
+    }
+  );
+
+  /**
    * GET /generate_204
    * Health check endpoint that returns HTTP 204 No Content.
    */
