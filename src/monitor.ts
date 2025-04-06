@@ -252,6 +252,7 @@ async function sendNotifications(networkId: string) {
           txid: notification.txid,
           attemptCount: notification.attemptCount,
           firstDetectedAt: notification.firstAttemptAt,
+          networkId: networkId, // Include the network ID in the notification data
         },
       });
 

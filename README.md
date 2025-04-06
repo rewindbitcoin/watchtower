@@ -313,12 +313,9 @@ The language is specified using the `locale` parameter during vault registration
 
 ### Retrieve Unacknowledged Notifications
 
-**`POST /watchtower/notifications`** or **`POST /:networkId/watchtower/notifications`**
+**`POST /all-networks/watchtower/notifications`**
 
-- **Purpose:** Retrieves all unacknowledged notifications for a specific device.
-- **URL Parameters:**
-  - `networkId`: The Bitcoin network (`bitcoin`, `testnet`, `tape`, or `regtest`)
-  - If using `/watchtower/notifications` without networkId, defaults to `bitcoin` mainnet
+- **Purpose:** Retrieves all unacknowledged notifications for a specific device across all networks.
 - **Request Body:**
 
   ```json
@@ -340,17 +337,19 @@ The language is specified using the `locale` parameter during vault registration
         "watchtowerId": "client_provided_unique_id_for_watchtower",
         "txid": "abcdef1234567890abcdef1234567890",
         "attemptCount": 3,
-        "firstDetectedAt": 1634567890
+        "firstDetectedAt": 1634567890,
+        "networkId": "bitcoin"
       },
       {
         "vaultId": "vault456",
         "walletId": "wallet_unique_identifier",
-        "walletName": "My Bitcoin Wallet",
+        "walletName": "My Testnet Wallet",
         "vaultNumber": 2,
         "watchtowerId": "client_provided_unique_id_for_watchtower",
         "txid": "fedcba0987654321fedcba0987654321",
         "attemptCount": 1,
-        "firstDetectedAt": 1634567891
+        "firstDetectedAt": 1634567891,
+        "networkId": "testnet"
       }
     ]
   }

@@ -26,6 +26,7 @@ export interface NotificationData {
   txid: string;
   attemptCount: number;
   firstDetectedAt: number;
+  networkId: string; // The network this notification belongs to
 }
 
 export interface NotificationPayload {
