@@ -22,7 +22,7 @@ export interface NotificationData {
   walletId: string;
   walletName: string;
   vaultNumber: number;
-  watchtowerUrl: string;
+  watchtowerId: string; // Client-provided unique ID for the watchtower instance
   txid: string;
   attemptCount?: number;
   firstDetectedAt?: number;

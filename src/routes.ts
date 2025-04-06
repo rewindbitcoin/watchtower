@@ -39,7 +39,7 @@ export function registerRoutes(
         vaults,
         walletId,
         walletName,
-        watchtowerUrl,
+        watchtowerId, // Client-provided unique ID for the watchtower instance
         locale = "en",
       } = req.body;
       try {
@@ -57,11 +57,11 @@ export function registerRoutes(
           !Array.isArray(vaults) ||
           !walletId ||
           !walletName ||
-          !watchtowerUrl
+          !watchtowerId // Added watchtowerId validation
         ) {
           res.status(400).json({
             error:
-              "Invalid input data. pushToken, vaults array, walletId, walletName, and watchtowerUrl are required",
+              "Invalid input data. pushToken, vaults array, walletId, walletName, and watchtowerId are required",
           });
           return;
         }

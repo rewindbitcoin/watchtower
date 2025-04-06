@@ -240,7 +240,7 @@ async function sendNotifications(networkId: string) {
           walletId: notification.walletId,
           walletName: notification.walletName,
           vaultNumber: notification.vaultNumber,
-          watchtowerUrl: notification.watchtowerUrl,
+          watchtowerId: notification.watchtowerId, // Client-provided unique ID for the watchtower instance
           txid: notification.txid,
           attemptCount: notification.attemptCount,
           firstDetectedAt: notification.firstAttemptAt,
