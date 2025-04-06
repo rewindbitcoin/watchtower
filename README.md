@@ -255,6 +255,13 @@ This acknowledgment system ensures that users are only notified until they've co
 
 The Watchtower provides a simple REST API for registering vaults and acknowledging notifications. Below are the available endpoints:
 
+### Health Check
+
+**`GET /generate_204`**
+
+- **Purpose:** Checks if the service is running.
+- **Response:** `204 No Content`
+
 ### Register Vaults to Be Monitored
 
 **`POST /watchtower/register`** or **`POST /:networkId/watchtower/register`**
@@ -304,12 +311,28 @@ The language is specified using the `locale` parameter during vault registration
   - `403 Forbidden`: Commitment transaction doesn't pay to an authorized address
   - `409 Conflict`: Vault has already been accessed and cannot be registered again
 
-### Health Check
+### Acknowledge Notification Receipt
 
-**`GET /generate_204`**
+**`POST /watchtower/ack`** or **`POST /:networkId/watchtower/ack`**
 
-- **Purpose:** Checks if the service is running.
-- **Response:** `204 No Content`
+- **Purpose:** Acknowledges receipt of a notification for a specific vault.
+- **URL Parameters:**
+  - `networkId`: The Bitcoin network (`bitcoin`, `testnet`, `tape`, or `regtest`)
+  - If using `/watchtower/ack` without networkId, defaults to `bitcoin` mainnet
+- **Request Body:**
+
+  ```json
+  {
+    "pushToken": "ExponentPushToken[xyz]",
+    "vaultId": "vault123"
+  }
+  ```
+
+- **Responses:**
+  - `200 OK`: Acknowledgment successful
+  - `400 Bad Request`: Invalid input data
+  - `404 Not Found`: No matching notification found
+  - `500 Internal Server Error`: Server error
 
 ### Retrieve Unacknowledged Notifications
 
@@ -358,29 +381,6 @@ The language is specified using the `locale` parameter during vault registration
 - **Responses:**
   - `200 OK`: Request successful (even if no notifications are found)
   - `400 Bad Request`: Invalid input data (missing pushToken)
-  - `500 Internal Server Error`: Server error
-
-### Acknowledge Notification Receipt
-
-**`POST /watchtower/ack`** or **`POST /:networkId/watchtower/ack`**
-
-- **Purpose:** Acknowledges receipt of a notification for a specific vault.
-- **URL Parameters:**
-  - `networkId`: The Bitcoin network (`bitcoin`, `testnet`, `tape`, or `regtest`)
-  - If using `/watchtower/ack` without networkId, defaults to `bitcoin` mainnet
-- **Request Body:**
-
-  ```json
-  {
-    "pushToken": "ExponentPushToken[xyz]",
-    "vaultId": "vault123"
-  }
-  ```
-
-- **Responses:**
-  - `200 OK`: Acknowledgment successful
-  - `400 Bad Request`: Invalid input data
-  - `404 Not Found`: No matching notification found
   - `500 Internal Server Error`: Server error
 
 ---
