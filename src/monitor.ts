@@ -257,7 +257,7 @@ async function sendNotifications(networkId: string) {
 
       if (success) {
         logger.info(
-          `Notification sent for vault ${notification.vaultId} to device ${notification.pushToken.substring(0, 10)}... (tx status: ${notification.status}, attempt: ${notification.attemptCount}, locale: ${locale} [normalized from: ${notification.locale}])`,
+          `Notification sent for vault ${notification.vaultId} to device ${notification.pushToken} (tx status: ${notification.status}, attempt: ${notification.attemptCount}, locale: ${locale} [normalized from: ${notification.locale}])`,
           {
             walletId: notification.walletId,
             walletName: notification.walletName,
@@ -268,7 +268,7 @@ async function sendNotifications(networkId: string) {
       } else {
         logger.error(
           `Failed to send push notification for vault ${notification.vaultId}. Will retry in next cycle.`,
-          { pushToken: notification.pushToken.substring(0, 10) + "..." },
+          { pushToken: notification.pushToken },
         );
         // We don't update the status, so it will be retried in the next cycle
       }

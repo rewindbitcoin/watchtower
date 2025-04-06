@@ -24,15 +24,15 @@ export interface NotificationData {
   vaultNumber: number;
   watchtowerId: string; // Client-provided unique ID for the watchtower instance
   txid: string;
-  attemptCount?: number;
-  firstDetectedAt?: number;
+  attemptCount: number;
+  firstDetectedAt: number;
 }
 
 export interface NotificationPayload {
   to: string;
   title: string;
   body: string;
-  data?: NotificationData;
+  data: NotificationData;
 }
 
 export async function sendPushNotification(

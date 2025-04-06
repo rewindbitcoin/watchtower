@@ -16,6 +16,7 @@ import { Express, Request, Response } from "express";
 import { getDb } from "./db";
 import { createLogger } from "./logger";
 import { verifyCommitmentAuthorization } from "./commitments";
+import { NotificationData } from "./notifications";
 
 // Create logger for this module
 const logger = createLogger("Routes");
@@ -256,7 +257,7 @@ export function registerRoutes(
           walletId,
           walletName,
           watchtowerId,
-          pushToken: pushToken ? pushToken.substring(0, 10) + "..." : undefined,
+          pushToken,
         });
         res.status(500).json({ error: "Internal server error" });
         return;
@@ -304,7 +305,7 @@ export function registerRoutes(
 
         if (result.changes === 0) {
           logger.warn(
-            `Acknowledgment received for unknown notification: ${vaultId} from ${pushToken.substring(0, 10)}...`,
+            `Acknowledgment received for unknown notification: ${vaultId} from ${pushToken}`,
           );
           res.status(404).json({
             error: "Notification not found",
@@ -315,7 +316,7 @@ export function registerRoutes(
         }
 
         logger.info(
-          `Notification acknowledged for vault ${vaultId} by device ${pushToken.substring(0, 10)}...`,
+          `Notification acknowledged for vault ${vaultId} by device ${pushToken}`,
         );
         res.sendStatus(200);
       } catch (err: unknown) {
@@ -324,7 +325,7 @@ export function registerRoutes(
           error: errorMessage,
           stack: err instanceof Error ? err.stack : undefined,
           vaultId,
-          pushToken: pushToken ? pushToken.substring(0, 10) + "..." : undefined,
+          pushToken,
         });
         res.status(500).json({ error: "Internal server error" });
       }
@@ -354,7 +355,8 @@ export function registerRoutes(
 
         if (!pushToken) {
           res.status(400).json({
-            error: "Invalid input data. pushToken is required in the request body",
+            error:
+              "Invalid input data. pushToken is required in the request body",
           });
           return;
         }
@@ -362,7 +364,7 @@ export function registerRoutes(
         const db = getDb(networkId);
 
         // Get all unacknowledged notifications for this push token
-        const notifications = await db.all(
+        const queriedNotifications = await db.all(
           `
           SELECT n.vaultId, n.walletId, n.walletName, n.vaultNumber, n.watchtowerId,
                  vt.txid, n.attemptCount, n.firstAttemptAt as firstDetectedAt
@@ -373,15 +375,15 @@ export function registerRoutes(
             AND (vt.status = 'reversible' OR vt.status = 'irreversible')
             AND n.attemptCount > 0
           `,
-          [pushToken]
+          [pushToken],
         );
 
         logger.info(
-          `Retrieved ${notifications.length} unacknowledged notifications for device ${pushToken.substring(0, 10)}... on ${networkId} network`
+          `Retrieved ${queriedNotifications.length} unacknowledged notifications for device ${pushToken} on ${networkId} network`,
         );
 
-        res.status(200).json({
-          notifications: notifications.map(notification => ({
+        const notifications: Array<NotificationData> = queriedNotifications.map(
+          (notification) => ({
             vaultId: notification.vaultId,
             walletId: notification.walletId,
             walletName: notification.walletName,
@@ -389,19 +391,23 @@ export function registerRoutes(
             watchtowerId: notification.watchtowerId,
             txid: notification.txid,
             attemptCount: notification.attemptCount,
-            firstDetectedAt: notification.firstDetectedAt
-          }))
-        });
+            firstDetectedAt: notification.firstDetectedAt,
+          }),
+        );
+        res.status(200).json({ notifications });
       } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : String(err);
-        logger.error(`Error in watchtower/notifications for ${networkId} network:`, {
-          error: errorMessage,
-          stack: err instanceof Error ? err.stack : undefined,
-          pushToken: pushToken ? pushToken.substring(0, 10) + "..." : undefined,
-        });
+        logger.error(
+          `Error in watchtower/notifications for ${networkId} network:`,
+          {
+            error: errorMessage,
+            stack: err instanceof Error ? err.stack : undefined,
+            pushToken,
+          },
+        );
         res.status(500).json({ error: "Internal server error" });
       }
-    }
+    },
   );
 
   /**
