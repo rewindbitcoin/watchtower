@@ -168,7 +168,7 @@ export function registerRoutes(
                   walletId,
                   walletName,
                   vaultNumber,
-                  watchtowerUrl,
+                  watchtowerId,
                   locale,
                 },
               );
@@ -176,14 +176,14 @@ export function registerRoutes(
 
             // Insert notification entry and check if it was actually inserted
             const result = await db.run(
-              `INSERT OR IGNORE INTO notifications (pushToken, vaultId, walletId, walletName, vaultNumber, watchtowerUrl, locale) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+              `INSERT OR IGNORE INTO notifications (pushToken, vaultId, walletId, walletName, vaultNumber, watchtowerId, locale) VALUES (?, ?, ?, ?, ?, ?, ?)`,
               [
                 pushToken,
                 vaultId,
                 walletId,
                 walletName,
                 vaultNumber,
-                watchtowerUrl,
+                watchtowerId,
                 locale,
               ],
             );
@@ -197,7 +197,7 @@ export function registerRoutes(
                   walletId,
                   walletName,
                   vaultNumber,
-                  watchtowerUrl,
+                  watchtowerId,
                 },
               );
 
@@ -220,12 +220,12 @@ export function registerRoutes(
 
               logger.info(
                 `Registered vault ${vaultId} with ${triggerTxIds.length} trigger transactions on ${networkId} network`,
-                { walletId, walletName, vaultNumber, watchtowerUrl, locale },
+                { walletId, walletName, vaultNumber, watchtowerId, locale },
               );
             } else {
               logger.info(
                 `Notification for vault ${vaultId} and push token ${pushToken} already exists on ${networkId} network, skipping txid processing`,
-                { walletId, walletName, vaultNumber, watchtowerUrl },
+                { walletId, walletName, vaultNumber, watchtowerId },
               );
             }
           }
@@ -243,7 +243,7 @@ export function registerRoutes(
             error: error instanceof Error ? error.message : String(error),
             walletId,
             walletName,
-            watchtowerUrl,
+            watchtowerId,
           });
           throw error;
         }
@@ -255,7 +255,7 @@ export function registerRoutes(
           stack: err instanceof Error ? err.stack : undefined,
           walletId,
           walletName,
-          watchtowerUrl,
+          watchtowerId,
           pushToken: pushToken ? pushToken.substring(0, 10) + "..." : undefined,
         });
         res.status(500).json({ error: "Internal server error" });

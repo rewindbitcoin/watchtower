@@ -195,7 +195,7 @@ When a vault access attempt is detected, the Watchtower immediately sends a push
     "walletId": "wallet_unique_identifier",
     "walletName": "My Bitcoin Wallet",
     "vaultNumber": 1,
-    "watchtowerUrl": "https://watchtower.example.com",
+    "watchtowerId": "client_provided_unique_id_for_watchtower",
     "txid": "abcdef1234567890abcdef1234567890"
   }
 }
@@ -225,7 +225,7 @@ This persistent approach ensures that even if a user's device is temporarily off
     "walletId": "wallet_unique_identifier",
     "walletName": "My Bitcoin Wallet",
     "vaultNumber": 1,
-    "watchtowerUrl": "https://watchtower.example.com",
+    "watchtowerId": "client_provided_unique_id_for_watchtower",
     "txid": "abcdef1234567890abcdef1234567890",
     "attemptCount": 3,
     "firstDetectedAt": 1634567890
@@ -268,7 +268,7 @@ The Watchtower provides a simple REST API for registering vaults and acknowledgi
     "pushToken": "ExponentPushToken[xyz]",
     "walletId": "wallet_unique_identifier", // Unique ID for the wallet
     "walletName": "My Bitcoin Wallet",
-    "watchtowerUrl": "https://watchtower.example.com", // Base URL of this watchtower instance
+    "watchtowerId": "client_provided_unique_id_for_watchtower", // Client-provided unique ID for this watchtower instance
     "locale": "es", // Optional, defaults to "en"
     "vaults": [
       {
@@ -346,7 +346,7 @@ The Watchtower API uses **SQLite** with the following structure:
 | `walletId` | TEXT | Unique ID for the wallet |
 | `walletName` | TEXT | Name of the wallet containing the vault |
 | `vaultNumber` | INTEGER | The nth vault created in the wallet |
-| `watchtowerUrl` | TEXT | Base URL of the watchtower service used for registration |
+| `watchtowerId` | TEXT | Client-provided unique ID for the watchtower instance used for registration |
 | `firstAttemptAt` | INTEGER | Unix timestamp of first notification attempt |
 | `acknowledged` | INTEGER | Whether notification was acknowledged (0=no, 1=yes) |
 | `lastAttemptAt` | INTEGER | Unix timestamp of last notification attempt |

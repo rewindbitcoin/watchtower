@@ -151,7 +151,7 @@ async function sendNotifications(networkId: string) {
     `
     SELECT n.pushToken, n.vaultId, vt.txid, vt.status,
            n.firstAttemptAt, n.lastAttemptAt, n.attemptCount, n.acknowledged,
-           n.walletId, n.walletName, n.vaultNumber, n.watchtowerUrl, n.locale
+           n.walletId, n.walletName, n.vaultNumber, n.watchtowerId, n.locale
     FROM notifications n
     JOIN vault_txids vt ON n.vaultId = vt.vaultId
     WHERE n.acknowledged = 0
@@ -254,7 +254,7 @@ async function sendNotifications(networkId: string) {
             walletId: notification.walletId,
             walletName: notification.walletName,
             vaultNumber: notification.vaultNumber,
-            watchtowerUrl: notification.watchtowerUrl,
+            watchtowerId: notification.watchtowerId,
           },
         );
       } else {
