@@ -163,8 +163,6 @@ The Watchtower API uses a commitment verification system to prevent abuse:
   - Prevents spam registrations by requiring a real on-chain payment
   - Ensures only legitimate vaults can be registered with the service
 - Each commitment can only be used for one vault ID
-- When a trigger transaction is detected, it's verified to be spending from the commitment
-- If the trigger is not spending from the commitment, the alert is not sent
 - Note: If you're running your own private watchtower, you can disable this feature
   as long as you don't make your service publicly available
 
