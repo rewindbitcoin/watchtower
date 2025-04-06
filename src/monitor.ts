@@ -226,7 +226,7 @@ async function sendNotifications(networkId: string) {
       // Format time since first detection with appropriate prefix/suffix
       const isFirstNotification = notification.attemptCount === 1;
       const timeSince = formatTimeSince(
-        notification.firstAttemptAt,
+        notification.firstAttemptAt * 1000,
         locale,
         isFirstNotification,
       );
