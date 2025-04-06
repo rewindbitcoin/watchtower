@@ -333,81 +333,92 @@ export function registerRoutes(
   );
 
   /**
-   * POST /watchtower/notifications and /:networkId/watchtower/notifications
-   * Retrieves unacknowledged notifications for a specific push token.
+   * POST /all-networks/watchtower/notifications
+   * Retrieves unacknowledged notifications for a specific push token across all networks.
    */
   app.post(
-    ["/watchtower/notifications", "/:networkId/watchtower/notifications"],
+    "/all-networks/watchtower/notifications",
     async (req: Request, res: Response): Promise<void> => {
-      // Default to bitcoin if no networkId is provided in the path
-      const networkId = req.params.networkId || "bitcoin";
       const { pushToken } = req.body;
 
       try {
-        // Validate network parameter
-        if (!["bitcoin", "testnet", "tape", "regtest"].includes(networkId)) {
-          res.status(400).json({
-            error:
-              "Invalid networkId. Must be 'bitcoin', 'testnet', 'tape', or 'regtest'",
-          });
-          return;
-        }
-
         if (!pushToken) {
           res.status(400).json({
-            error:
-              "Invalid input data. pushToken is required in the request body",
+            error: "Invalid input data. pushToken is required in the request body",
           });
           return;
         }
 
-        const db = getDb(networkId);
+        // Define the networks to query
+        const networks = ["bitcoin", "testnet", "tape", "regtest"];
+        const allNotifications: Array<NotificationData> = [];
 
-        // Get all unacknowledged notifications for this push token
-        const queriedNotifications = await db.all(
-          `
-          SELECT n.vaultId, n.walletId, n.walletName, n.vaultNumber, n.watchtowerId,
-                 vt.txid, n.attemptCount, n.firstAttemptAt as firstDetectedAt
-          FROM notifications n
-          JOIN vault_txids vt ON n.vaultId = vt.vaultId
-          WHERE n.pushToken = ? 
-            AND n.acknowledged = 0
-            AND (vt.status = 'reversible' OR vt.status = 'irreversible')
-            AND n.attemptCount > 0
-          `,
-          [pushToken],
-        );
+        // Query each network for notifications
+        for (const networkId of networks) {
+          try {
+            // Skip networks that don't have an initialized database
+            if (!getDb(networkId)) {
+              continue;
+            }
+
+            const db = getDb(networkId);
+
+            // Get all unacknowledged notifications for this push token from this network
+            const queriedNotifications = await db.all(
+              `
+              SELECT n.vaultId, n.walletId, n.walletName, n.vaultNumber, n.watchtowerId,
+                     vt.txid, n.attemptCount, n.firstAttemptAt as firstDetectedAt
+              FROM notifications n
+              JOIN vault_txids vt ON n.vaultId = vt.vaultId
+              WHERE n.pushToken = ? 
+                AND n.acknowledged = 0
+                AND (vt.status = 'reversible' OR vt.status = 'irreversible')
+                AND n.attemptCount > 0
+              `,
+              [pushToken]
+            );
+
+            // Add network ID to each notification and add to the combined results
+            const networkNotifications: Array<NotificationData> = queriedNotifications.map(
+              (notification) => ({
+                vaultId: notification.vaultId,
+                walletId: notification.walletId,
+                walletName: notification.walletName,
+                vaultNumber: notification.vaultNumber,
+                watchtowerId: notification.watchtowerId,
+                txid: notification.txid,
+                attemptCount: notification.attemptCount,
+                firstDetectedAt: notification.firstDetectedAt,
+                networkId: networkId,
+              })
+            );
+
+            allNotifications.push(...networkNotifications);
+
+            logger.info(
+              `Retrieved ${networkNotifications.length} unacknowledged notifications for device ${pushToken} on ${networkId} network`
+            );
+          } catch (err) {
+            // Log the error but continue with other networks
+            logger.error(`Error querying ${networkId} network for notifications:`, err);
+          }
+        }
 
         logger.info(
-          `Retrieved ${queriedNotifications.length} unacknowledged notifications for device ${pushToken} on ${networkId} network`,
+          `Retrieved a total of ${allNotifications.length} unacknowledged notifications across all networks for device ${pushToken}`
         );
 
-        const notifications: Array<NotificationData> = queriedNotifications.map(
-          (notification) => ({
-            vaultId: notification.vaultId,
-            walletId: notification.walletId,
-            walletName: notification.walletName,
-            vaultNumber: notification.vaultNumber,
-            watchtowerId: notification.watchtowerId,
-            txid: notification.txid,
-            attemptCount: notification.attemptCount,
-            firstDetectedAt: notification.firstDetectedAt,
-          }),
-        );
-        res.status(200).json({ notifications });
+        res.status(200).json({ notifications: allNotifications });
       } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : String(err);
-        logger.error(
-          `Error in watchtower/notifications for ${networkId} network:`,
-          {
-            error: errorMessage,
-            stack: err instanceof Error ? err.stack : undefined,
-            pushToken,
-          },
-        );
+        logger.error(`Error in all-networks/watchtower/notifications:`, {
+          error: errorMessage,
+          stack: err instanceof Error ? err.stack : undefined,
+          pushToken: pushToken,
+        });
         res.status(500).json({ error: "Internal server error" });
       }
-    },
+    }
   );
 
   /**
