@@ -344,7 +344,8 @@ export function registerRoutes(
       try {
         if (!pushToken) {
           res.status(400).json({
-            error: "Invalid input data. pushToken is required in the request body",
+            error:
+              "Invalid input data. pushToken is required in the request body",
           });
           return;
         }
@@ -375,12 +376,12 @@ export function registerRoutes(
                 AND (vt.status = 'reversible' OR vt.status = 'irreversible')
                 AND n.attemptCount > 0
               `,
-              [pushToken]
+              [pushToken],
             );
 
             // Add network ID to each notification and add to the combined results
-            const networkNotifications: Array<NotificationData> = queriedNotifications.map(
-              (notification) => ({
+            const networkNotifications: Array<NotificationData> =
+              queriedNotifications.map((notification) => ({
                 vaultId: notification.vaultId,
                 walletId: notification.walletId,
                 walletName: notification.walletName,
@@ -389,23 +390,25 @@ export function registerRoutes(
                 txid: notification.txid,
                 attemptCount: notification.attemptCount,
                 firstDetectedAt: notification.firstDetectedAt,
-                networkId: networkId,
-              })
-            );
+                networkId,
+              }));
 
             allNotifications.push(...networkNotifications);
 
             logger.info(
-              `Retrieved ${networkNotifications.length} unacknowledged notifications for device ${pushToken} on ${networkId} network`
+              `Retrieved ${networkNotifications.length} unacknowledged notifications for device ${pushToken} on ${networkId} network`,
             );
           } catch (err) {
             // Log the error but continue with other networks
-            logger.error(`Error querying ${networkId} network for notifications:`, err);
+            logger.error(
+              `Error querying ${networkId} network for notifications:`,
+              err,
+            );
           }
         }
 
         logger.info(
-          `Retrieved a total of ${allNotifications.length} unacknowledged notifications across all networks for device ${pushToken}`
+          `Retrieved a total of ${allNotifications.length} unacknowledged notifications across all networks for device ${pushToken}`,
         );
 
         res.status(200).json({ notifications: allNotifications });
@@ -418,7 +421,7 @@ export function registerRoutes(
         });
         res.status(500).json({ error: "Internal server error" });
       }
-    }
+    },
   );
 
   /**
