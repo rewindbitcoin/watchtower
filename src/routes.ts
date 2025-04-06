@@ -57,7 +57,7 @@ export function registerRoutes(
           !Array.isArray(vaults) ||
           !walletId ||
           !walletName ||
-          !watchtowerId // Added watchtowerId validation
+          !watchtowerId
         ) {
           res.status(400).json({
             error:
