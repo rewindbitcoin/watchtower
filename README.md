@@ -197,7 +197,7 @@ When a vault access attempt is detected, the Watchtower immediately sends a push
     "vaultNumber": 1,
     "watchtowerId": "client_provided_unique_id_for_watchtower",
     "txid": "abcdef1234567890abcdef1234567890",
-    "attemptCount": 1, // Included from the first notification
+    "attemptCount": 1,
     "firstDetectedAt": 1634567890
   }
 }

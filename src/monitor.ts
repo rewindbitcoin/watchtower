@@ -224,9 +224,9 @@ async function sendNotifications(networkId: string) {
       const title = getMessage(locale, "vaultAccessTitle", {});
 
       // Format time since first detection with appropriate prefix/suffix
-      const isFirstNotification = !notification.firstAttemptAt;
+      const isFirstNotification = notification.attemptCount === 1;
       const timeSince = formatTimeSince(
-        (notification.firstAttemptAt || Math.floor(Date.now() / 1000)) * 1000,
+        notification.firstAttemptAt,
         locale,
         isFirstNotification,
       );
