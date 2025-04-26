@@ -14,6 +14,23 @@
 
 type LogLevel = "debug" | "info" | "warn" | "error";
 
+// Define log level hierarchy for filtering
+const LOG_LEVELS: Record<LogLevel, number> = {
+  debug: 0,
+  info: 1,
+  warn: 2,
+  error: 3,
+};
+
+// Get minimum log level from environment variable or default to "info"
+function getMinLogLevel(): LogLevel {
+  const envLevel = (process.env.LOG_LEVEL || "info").toLowerCase() as LogLevel;
+  return LOG_LEVELS.hasOwnProperty(envLevel) ? envLevel : "info";
+}
+
+// Get the numeric value of the minimum log level
+const MIN_LOG_LEVEL = LOG_LEVELS[getMinLogLevel()];
+
 /**
  * Logger utility to standardize log formats across the application
  */
@@ -82,19 +99,27 @@ export class Logger {
   }
 
   debug(message: string, data?: unknown): void {
-    console.debug(this.formatMessage("debug", message, data));
+    if (MIN_LOG_LEVEL <= LOG_LEVELS.debug) {
+      console.debug(this.formatMessage("debug", message, data));
+    }
   }
 
   info(message: string, data?: unknown): void {
-    console.log(this.formatMessage("info", message, data));
+    if (MIN_LOG_LEVEL <= LOG_LEVELS.info) {
+      console.log(this.formatMessage("info", message, data));
+    }
   }
 
   warn(message: string, data?: unknown): void {
-    console.warn(this.formatMessage("warn", message, data));
+    if (MIN_LOG_LEVEL <= LOG_LEVELS.warn) {
+      console.warn(this.formatMessage("warn", message, data));
+    }
   }
 
   error(message: string, data?: unknown): void {
-    console.error(this.formatMessage("error", message, data));
+    if (MIN_LOG_LEVEL <= LOG_LEVELS.error) {
+      console.error(this.formatMessage("error", message, data));
+    }
   }
 
   /**
