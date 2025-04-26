@@ -27,6 +27,12 @@ export async function initDb(dbPath: string, networkId: string) {
     driver: sqlite3.Database,
   });
 
+  // Enable WAL mode for better concurrency handling
+  await db.exec("PRAGMA journal_mode = WAL;");
+  
+  // Set busy timeout (how long to wait for locks)
+  await db.exec("PRAGMA busy_timeout = 10000;"); // 10 seconds
+  
   // Create tables if they do not exist
   await db.exec(`
     CREATE TABLE IF NOT EXISTS notifications (
