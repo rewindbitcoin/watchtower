@@ -111,6 +111,10 @@ try {
 const app = express();
 app.use(express.json());
 
+// Import and use request ID middleware
+import { requestIdMiddleware } from "./middleware";
+app.use(requestIdMiddleware);
+
 // Register API routes
 registerRoutes(app, dbFolder, requireCommitments);
 

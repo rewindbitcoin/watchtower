@@ -44,6 +44,9 @@ export function registerRoutes(
         locale = "en",
       } = req.body;
       try {
+        // Get request ID for logging
+        const requestId = req.requestId;
+        
         // Validate network parameter
         if (!["bitcoin", "testnet", "tape", "regtest"].includes(networkId)) {
           res.status(400).json({
@@ -235,6 +238,7 @@ export function registerRoutes(
           await db.exec("COMMIT");
           logger.info(
             `Successfully registered ${vaults.length} vaults for wallet "${walletName}" (ID: ${walletId}) on ${networkId} network`,
+            { requestId: req.requestId }
           );
           res.sendStatus(200);
         } catch (error) {
@@ -245,6 +249,7 @@ export function registerRoutes(
             walletId,
             walletName,
             watchtowerId,
+            requestId: req.requestId,
           });
           throw error;
         }
@@ -258,6 +263,7 @@ export function registerRoutes(
           walletName,
           watchtowerId,
           pushToken,
+          requestId: req.requestId,
         });
         res.status(500).json({ error: "Internal server error" });
         return;
@@ -326,6 +332,7 @@ export function registerRoutes(
           stack: err instanceof Error ? err.stack : undefined,
           vaultId,
           pushToken,
+          requestId: req.requestId,
         });
         res.status(500).json({ error: "Internal server error" });
       }
@@ -406,6 +413,7 @@ export function registerRoutes(
             error: errorMessage,
             stack: err instanceof Error ? err.stack : undefined,
             pushToken,
+            requestId: req.requestId,
           },
         );
         res.status(500).json({ error: "Internal server error" });

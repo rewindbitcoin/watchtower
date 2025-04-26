@@ -46,7 +46,14 @@ export class Logger {
    */
   private formatMessage(level: LogLevel, message: string, data?: unknown): string {
     const timestamp = this.formatTimestamp(new Date());
-    let formattedMessage = `[${timestamp}] [${level.toUpperCase()}] [${this.context}] ${message}`;
+    
+    // Extract requestId if present in data
+    let requestIdStr = '';
+    if (data && typeof data === 'object' && 'requestId' in data) {
+      requestIdStr = ` [ReqID:${(data as any).requestId}]`;
+    }
+    
+    let formattedMessage = `[${timestamp}] [${level.toUpperCase()}]${requestIdStr} [${this.context}] ${message}`;
 
     if (data) {
       if (data instanceof Error) {
