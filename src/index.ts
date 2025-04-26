@@ -16,7 +16,7 @@
 import express from "express";
 import { AddressInfo } from "net";
 import path from "path";
-import { initDb, getDb } from "./db";
+import { initDb, closeDb } from "./db";
 import { registerRoutes } from "./routes";
 import { startMonitoring } from "./monitor";
 import { setRegtestApiUrl } from "./blockchain";
@@ -130,10 +130,12 @@ const server = app.listen(port, async () => {
   if (runBitcoin) {
     networks.push("bitcoin");
     const dbPathBitcoin = path.join(dbFolder, "watchtower.bitcoin.sqlite");
-    await initDb(dbPathBitcoin, "bitcoin").catch((err) => {
+    try {
+      initDb(dbPathBitcoin, "bitcoin");
+    } catch (err) {
       logger.error("Failed to initialize Bitcoin DB:", err);
       process.exit(1);
-    });
+    }
     logger.info("Bitcoin mainnet monitoring enabled");
     // Start monitoring for bitcoin
     stopFunctions.push(startMonitoring("bitcoin", 60000));
@@ -142,10 +144,12 @@ const server = app.listen(port, async () => {
   if (runTestnet) {
     networks.push("testnet");
     const dbPathTestnet = path.join(dbFolder, "watchtower.testnet.sqlite");
-    await initDb(dbPathTestnet, "testnet").catch((err) => {
+    try {
+      initDb(dbPathTestnet, "testnet");
+    } catch (err) {
       logger.error("Failed to initialize Testnet DB:", err);
       process.exit(1);
-    });
+    }
     logger.info("Bitcoin testnet monitoring enabled");
     // Start monitoring for testnet
     stopFunctions.push(startMonitoring("testnet", 60000));
@@ -154,10 +158,12 @@ const server = app.listen(port, async () => {
   if (runTape) {
     networks.push("tape");
     const dbPathTape = path.join(dbFolder, "watchtower.tape.sqlite");
-    await initDb(dbPathTape, "tape").catch((err) => {
+    try {
+      initDb(dbPathTape, "tape");
+    } catch (err) {
       logger.error("Failed to initialize Tape DB:", err);
       process.exit(1);
-    });
+    }
     logger.info("Tape network enabled");
     // Start monitoring for tape
     stopFunctions.push(startMonitoring("tape", 60000));
@@ -168,10 +174,12 @@ const server = app.listen(port, async () => {
     // Set the custom API URL for regtest
     setRegtestApiUrl(regtestApiUrl);
     const dbPathRegtest = path.join(dbFolder, "watchtower.regtest.sqlite");
-    await initDb(dbPathRegtest, "regtest").catch((err) => {
+    try {
+      initDb(dbPathRegtest, "regtest");
+    } catch (err) {
       logger.error("Failed to initialize Regtest DB:", err);
       process.exit(1);
-    });
+    }
     logger.info(
       `Bitcoin regtest monitoring enabled with API: ${regtestApiUrl}`,
     );

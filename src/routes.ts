@@ -80,7 +80,9 @@ export function registerRoutes(
                   `Invalid vault data for ${networkId} network: missing vaultId or triggerTxIds`,
                   { vaultId, triggerTxIds },
                 );
-                throw new Error("Invalid vault data. vaultId, vaultNumber, and triggerTxIds array are required");
+                throw new Error(
+                  "Invalid vault data. vaultId, vaultNumber, and triggerTxIds array are required",
+                );
               }
 
               // Validate vaultNumber is a non-negative integer
@@ -93,7 +95,9 @@ export function registerRoutes(
                   `Invalid vaultNumber for ${networkId} network: ${vaultNumber}`,
                   { vaultId },
                 );
-                throw new Error("Invalid vaultNumber. Must be a non-negative integer");
+                throw new Error(
+                  "Invalid vaultNumber. Must be a non-negative integer",
+                );
               }
 
               // Verify commitment if required
@@ -102,7 +106,9 @@ export function registerRoutes(
                   logger.error(
                     `Missing commitment for vault ${vaultId} on ${networkId} network`,
                   );
-                  throw new Error("A commitment transaction is required for vault registration");
+                  throw new Error(
+                    "A commitment transaction is required for vault registration",
+                  );
                 }
 
                 const verificationResult = verifyCommitmentAuthorization(
@@ -113,13 +119,16 @@ export function registerRoutes(
                 );
 
                 if (!verificationResult.isValid) {
-                  throw new Error(verificationResult.error || "Unknown error while verifying the commitment");
+                  throw new Error(
+                    verificationResult.error ||
+                      "Unknown error while verifying the commitment",
+                  );
                 }
 
                 // Store the commitment in the database
                 const commitmentTxid = verificationResult.txid!;
                 db.prepare(
-                  "INSERT OR IGNORE INTO commitments (txid, vaultId) VALUES (?, ?)"
+                  "INSERT OR IGNORE INTO commitments (txid, vaultId) VALUES (?, ?)",
                 ).run(commitmentTxid, vaultId);
 
                 logger.info(
@@ -128,13 +137,15 @@ export function registerRoutes(
               }
 
               // Check if this vault has already been notified and transaction is irreversible
-              const existingNotification = db.prepare(
-                `SELECT n.attemptCount 
+              const existingNotification = db
+                .prepare(
+                  `SELECT n.attemptCount 
                  FROM notifications n
                  JOIN vault_txids vt ON n.vaultId = vt.vaultId
                  WHERE n.vaultId = ? AND n.attemptCount > 0 AND vt.status = 'irreversible' 
-                 LIMIT 1`
-              ).get(vaultId);
+                 LIMIT 1`,
+                )
+                .get(vaultId);
 
               if (existingNotification) {
                 logger.warn(
@@ -151,17 +162,19 @@ export function registerRoutes(
               }
 
               // Insert notification entry and check if it was actually inserted
-              const result = db.prepare(
-                `INSERT OR IGNORE INTO notifications (pushToken, vaultId, walletId, walletName, vaultNumber, watchtowerId, locale) VALUES (?, ?, ?, ?, ?, ?, ?)`
-              ).run(
-                pushToken,
-                vaultId,
-                walletId,
-                walletName,
-                vaultNumber,
-                watchtowerId,
-                locale,
-              );
+              const result = db
+                .prepare(
+                  `INSERT OR IGNORE INTO notifications (pushToken, vaultId, walletId, walletName, vaultNumber, watchtowerId, locale) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                )
+                .run(
+                  pushToken,
+                  vaultId,
+                  walletId,
+                  walletName,
+                  vaultNumber,
+                  watchtowerId,
+                  locale,
+                );
 
               // If changes === 0, the entry already existed, so skip processing txids
               if (result.changes > 0) {
@@ -179,15 +192,23 @@ export function registerRoutes(
                 // Process each transaction ID only if this is a new notification
                 // Insert transaction if it doesn't exist yet
                 const commitmentTxid = requireCommitments
-                  ? db.prepare(
-                      "SELECT txid FROM commitments WHERE vaultId = ?"
-                    ).get(vaultId)?.txid
+                  ? (
+                      db
+                        .prepare(
+                          "SELECT txid FROM commitments WHERE vaultId = ?",
+                        )
+                        .get(vaultId) as
+                        | {
+                            txid: string;
+                          }
+                        | undefined
+                    )?.txid
                   : null;
 
                 const insertTxStmt = db.prepare(
-                  "INSERT OR IGNORE INTO vault_txids (txid, vaultId, status, commitmentTxid) VALUES (?, ?, 'unchecked', ?)"
+                  "INSERT OR IGNORE INTO vault_txids (txid, vaultId, status, commitmentTxid) VALUES (?, ?, 'unchecked', ?)",
                 );
-                
+
                 for (const txid of triggerTxIds) {
                   insertTxStmt.run(txid, vaultId, commitmentTxid);
                 }
@@ -204,7 +225,7 @@ export function registerRoutes(
               }
             }
           })();
-          
+
           logger.info(
             `Successfully registered ${vaults.length} vaults for wallet "${walletName}" (ID: ${walletId}) on ${networkId} network`,
             { requestId: req.requestId },
@@ -218,7 +239,7 @@ export function registerRoutes(
             watchtowerId,
             requestId: req.requestId,
           });
-          
+
           // Send appropriate error response based on the error message
           if (error instanceof Error) {
             if (error.message.includes("Invalid vault data")) {
@@ -228,11 +249,13 @@ export function registerRoutes(
               res.status(400).json({ error: error.message });
               return;
             } else if (error.message.includes("commitment")) {
-              res.status(403).json({ error: "Invalid commitment", message: error.message });
+              res
+                .status(403)
+                .json({ error: "Invalid commitment", message: error.message });
               return;
             }
           }
-          
+
           throw error;
         }
         return;
@@ -284,11 +307,13 @@ export function registerRoutes(
         const db = getDb(networkId);
 
         // Update the notification to mark it as acknowledged
-        const result = db.prepare(
-          `UPDATE notifications 
+        const result = db
+          .prepare(
+            `UPDATE notifications 
            SET acknowledged = 1 
-           WHERE pushToken = ? AND vaultId = ?`
-        ).run(pushToken, vaultId);
+           WHERE pushToken = ? AND vaultId = ?`,
+          )
+          .run(pushToken, vaultId);
 
         if (result.changes === 0) {
           logger.warn(
@@ -352,8 +377,9 @@ export function registerRoutes(
         const db = getDb(networkId);
 
         // Get all unacknowledged notifications for this push token
-        const queriedNotifications = db.prepare(
-          `
+        const queriedNotifications = db
+          .prepare(
+            `
           SELECT n.vaultId, n.walletId, n.walletName, n.vaultNumber, n.watchtowerId,
                  vt.txid, n.attemptCount, n.firstAttemptAt as firstDetectedAt
           FROM notifications n
@@ -362,23 +388,22 @@ export function registerRoutes(
             AND n.acknowledged = 0
             AND (vt.status = 'reversible' OR vt.status = 'irreversible')
             AND n.attemptCount > 0
-          `
-        ).all(pushToken);
+          `,
+          )
+          .all(pushToken) as Array<NotificationData>;
 
         // Add network ID to each notification
-        const notifications: Array<NotificationData> = queriedNotifications.map(
-          (notification) => ({
-            vaultId: notification.vaultId,
-            walletId: notification.walletId,
-            walletName: notification.walletName,
-            vaultNumber: notification.vaultNumber,
-            watchtowerId: notification.watchtowerId,
-            txid: notification.txid,
-            attemptCount: notification.attemptCount,
-            firstDetectedAt: notification.firstDetectedAt,
-            networkId,
-          }),
-        );
+        const notifications = queriedNotifications.map((notification) => ({
+          vaultId: notification.vaultId,
+          walletId: notification.walletId,
+          walletName: notification.walletName,
+          vaultNumber: notification.vaultNumber,
+          watchtowerId: notification.watchtowerId,
+          txid: notification.txid,
+          attemptCount: notification.attemptCount,
+          firstDetectedAt: notification.firstDetectedAt,
+          networkId,
+        }));
 
         logger.info(
           `Retrieved ${notifications.length} unacknowledged notifications for device ${pushToken} on ${networkId} network`,

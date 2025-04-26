@@ -12,7 +12,7 @@
  * Copyright (c) 2025 Jose-Luis Landabaso, Rewind Bitcoin
  */
 
-import Database from 'better-sqlite3';
+import Database from "better-sqlite3";
 import { createLogger } from "./logger";
 
 const logger = createLogger("Database");
@@ -22,15 +22,15 @@ const dbConnections: Record<string, Database.Database> = {};
 
 export function initDb(dbPath: string, networkId: string) {
   // Create a new database connection
-  const db = new Database(dbPath, { 
+  const db = new Database(dbPath, {
     readonly: false,
     fileMustExist: false,
     timeout: 10000, // 10 seconds timeout on busy
   });
-  
+
   // Enable WAL mode for better concurrency handling
-  db.pragma('journal_mode = WAL');
-  
+  db.pragma("journal_mode = WAL");
+
   // Create tables if they do not exist
   db.exec(`
     CREATE TABLE IF NOT EXISTS notifications (
@@ -69,7 +69,7 @@ export function initDb(dbPath: string, networkId: string) {
 
   // Store the connection for this network
   dbConnections[networkId] = db;
-  
+
   logger.info(`Initialized database for ${networkId} at ${dbPath}`);
   return db;
 }

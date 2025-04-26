@@ -15,7 +15,7 @@
 import * as bitcoin from "bitcoinjs-lib";
 import * as fs from "fs";
 import * as path from "path";
-import Database from 'better-sqlite3';
+import Database from "better-sqlite3";
 import { createLogger } from "./logger";
 import { getDb } from "./db";
 
@@ -36,12 +36,12 @@ const addressesDbConnections: Record<string, Database.Database> = {};
  * @param vaultId The vault ID associated with this commitment
  * @returns Object with authorization status and txid if authorized
  */
-export async function verifyCommitmentAuthorization(
+export function verifyCommitmentAuthorization(
   commitment: string,
   networkId: string,
   dbFolder: string,
   vaultId: string,
-): Promise<{ isValid: boolean; txid?: string; error?: string }> {
+): { isValid: boolean; txid?: string; error?: string } {
   try {
     // Get the network configuration for bitcoin-js-lib
     const network =
@@ -57,9 +57,9 @@ export async function verifyCommitmentAuthorization(
 
     // Check if this commitment has already been used
     const db = getDb(networkId);
-    const existingCommitment = db.prepare(
-      "SELECT vaultId FROM commitments WHERE txid = ?"
-    ).get(txid);
+    const existingCommitment = db
+      .prepare("SELECT vaultId FROM commitments WHERE txid = ?")
+      .get(txid) as { vaultId: string } | undefined;
 
     if (existingCommitment) {
       if (existingCommitment.vaultId === vaultId) {
@@ -117,7 +117,9 @@ export async function verifyCommitmentAuthorization(
     const placeholders = candidateAddresses.map(() => "?").join(",");
     const query = `SELECT COUNT(*) AS count FROM addresses WHERE address IN (${placeholders})`;
 
-    const result = addressDb.prepare(query).get(...candidateAddresses);
+    const result = addressDb.prepare(query).get(...candidateAddresses) as
+      | { count: number }
+      | undefined;
 
     if (!result || result.count === 0) {
       logger.warn(
@@ -154,9 +156,11 @@ function initAddressesDb(networkId: string, dbPath: string) {
   const db = new Database(dbPath, { readonly: true });
 
   // Check if the addresses table exists
-  const tableExists = db.prepare(
-    "SELECT name FROM sqlite_master WHERE type='table' AND name='addresses'"
-  ).get();
+  const tableExists = db
+    .prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='addresses'",
+    )
+    .get();
 
   if (!tableExists) {
     throw new Error(
