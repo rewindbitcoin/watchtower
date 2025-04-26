@@ -44,9 +44,6 @@ export function registerRoutes(
         locale = "en",
       } = req.body;
       try {
-        // Get request ID for logging
-        const requestId = req.requestId;
-        
         // Validate network parameter
         if (!["bitcoin", "testnet", "tape", "regtest"].includes(networkId)) {
           res.status(400).json({
@@ -238,7 +235,7 @@ export function registerRoutes(
           await db.exec("COMMIT");
           logger.info(
             `Successfully registered ${vaults.length} vaults for wallet "${walletName}" (ID: ${walletId}) on ${networkId} network`,
-            { requestId: req.requestId }
+            { requestId: req.requestId },
           );
           res.sendStatus(200);
         } catch (error) {

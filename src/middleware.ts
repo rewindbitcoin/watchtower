@@ -31,22 +31,31 @@ declare global {
 /**
  * Middleware to add a unique request ID to each request
  */
-export function requestIdMiddleware(req: Request, res: Response, next: NextFunction) {
+export function requestIdMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   // Check if client provided a request ID
   const clientProvidedId = req.headers["x-request-id"];
-  
+
   // Use client ID or generate a new one
   req.requestId = (clientProvidedId as string) || randomUUID();
-  
+
   // Add it to response headers for debugging
   res.setHeader("X-Request-ID", req.requestId);
-  
-  logger.debug(`Request started: ${req.method} ${req.originalUrl}`, { requestId: req.requestId });
-  
+
+  logger.debug(`Request started: ${req.method} ${req.originalUrl}`, {
+    requestId: req.requestId,
+  });
+
   // Track response completion
   res.on("finish", () => {
-    logger.debug(`Request completed: ${req.method} ${req.originalUrl} - Status: ${res.statusCode}`, { requestId: req.requestId });
+    logger.debug(
+      `Request completed: ${req.method} ${req.originalUrl} - Status: ${res.statusCode}`,
+      { requestId: req.requestId },
+    );
   });
-  
+
   next();
 }

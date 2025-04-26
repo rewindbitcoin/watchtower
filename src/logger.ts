@@ -44,28 +44,37 @@ export class Logger {
   /**
    * Format a log message with timestamp and context
    */
-  private formatMessage(level: LogLevel, message: string, data?: unknown): string {
+  private formatMessage(
+    level: LogLevel,
+    message: string,
+    data?: unknown,
+  ): string {
     const timestamp = this.formatTimestamp(new Date());
-    
+    let dataToLog = data;
+
     // Extract requestId if present in data
-    let requestIdStr = '';
-    if (data && typeof data === 'object' && 'requestId' in data) {
-      requestIdStr = ` [ReqID:${(data as any).requestId}]`;
+    let requestIdStr = "";
+    if (data && typeof data === "object" && "requestId" in data) {
+      requestIdStr = ` [ReqID:${data.requestId}]`;
+      // If data only contains requestId, don't log it separately
+      if (Object.keys(data as object).length === 1 && "requestId" in data) {
+        dataToLog = undefined;
+      }
     }
-    
+
     let formattedMessage = `[${timestamp}] [${level.toUpperCase()}]${requestIdStr} [${this.context}] ${message}`;
 
-    if (data) {
-      if (data instanceof Error) {
-        formattedMessage += `\n${data.stack || data.message}`;
-      } else if (typeof data === "object") {
+    if (dataToLog) {
+      if (dataToLog instanceof Error) {
+        formattedMessage += `\n${dataToLog.stack || dataToLog.message}`;
+      } else if (typeof dataToLog === "object") {
         try {
-          formattedMessage += `\n${JSON.stringify(data, null, 2)}`;
+          formattedMessage += `\n${JSON.stringify(dataToLog, null, 2)}`;
         } catch (e) {
           formattedMessage += `\n[Object cannot be stringified]`;
         }
       } else {
-        formattedMessage += `\n${data}`;
+        formattedMessage += `\n${dataToLog}`;
       }
     }
 

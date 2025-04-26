@@ -217,9 +217,11 @@ export async function verifyTriggerSpendingCommitment(
     }
 
     // Check if any of the inputs are spending from the commitment transaction
-    const isSpendingFromCommitment = triggerTx.vin.some((input: any) => {
-      return input.txid === commitmentTxid;
-    });
+    const isSpendingFromCommitment = triggerTx.vin.some(
+      (input: { txid: string }) => {
+        return input.txid === commitmentTxid;
+      },
+    );
 
     if (isSpendingFromCommitment) {
       logger.info(
