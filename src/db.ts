@@ -12,26 +12,27 @@
  * Copyright (c) 2025 Jose-Luis Landabaso, Rewind Bitcoin
  */
 
-import sqlite3 from "sqlite3";
-import { open, Database } from "sqlite";
+import Database from 'better-sqlite3';
+import { createLogger } from "./logger";
+
+const logger = createLogger("Database");
 
 // Map to store database connections for each network
-const dbConnections: Record<
-  string,
-  Database<sqlite3.Database, sqlite3.Statement>
-> = {};
+const dbConnections: Record<string, Database.Database> = {};
 
-export async function initDb(dbPath: string, networkId: string) {
-  const db = await open({
-    filename: dbPath,
-    driver: sqlite3.Database,
+export function initDb(dbPath: string, networkId: string) {
+  // Create a new database connection
+  const db = new Database(dbPath, { 
+    readonly: false,
+    fileMustExist: false,
+    timeout: 10000, // 10 seconds timeout on busy
   });
-
+  
   // Enable WAL mode for better concurrency handling
-  await db.exec("PRAGMA journal_mode = WAL;");
+  db.pragma('journal_mode = WAL');
   
   // Create tables if they do not exist
-  await db.exec(`
+  db.exec(`
     CREATE TABLE IF NOT EXISTS notifications (
       pushToken TEXT NOT NULL,
       vaultId TEXT NOT NULL,
@@ -68,7 +69,8 @@ export async function initDb(dbPath: string, networkId: string) {
 
   // Store the connection for this network
   dbConnections[networkId] = db;
-
+  
+  logger.info(`Initialized database for ${networkId} at ${dbPath}`);
   return db;
 }
 
@@ -83,10 +85,11 @@ export function getDb(networkId: string) {
  * Close and remove a database connection for a specific network
  * @param networkId The network ID
  */
-export async function closeDb(networkId: string): Promise<void> {
+export function closeDb(networkId: string): void {
   const db = dbConnections[networkId];
   if (db) {
-    await db.close();
+    db.close();
     delete dbConnections[networkId];
+    logger.info(`Database for ${networkId} closed successfully`);
   }
 }

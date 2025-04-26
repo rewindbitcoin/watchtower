@@ -201,11 +201,11 @@ const server = app.listen(port, async () => {
 
         try {
           // Close main database connection
-          await getDb(networkId).close();
+          closeDb(networkId);
 
           if (requireCommitments) {
             // Close address database connection if it exists
-            await closeAddressesDb(networkId);
+            closeAddressesDb(networkId);
           }
 
           logger.info(

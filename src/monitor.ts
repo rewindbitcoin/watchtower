@@ -147,8 +147,7 @@ async function sendNotifications(networkId: string) {
   );
 
   // Find notifications that need to be sent or retried
-  const notificationsToSend = await db.all(
-    `
+  const notificationsToSend = db.prepare(`
     SELECT n.pushToken, n.vaultId, vt.txid, vt.status,
            n.firstAttemptAt, n.lastAttemptAt, n.attemptCount, n.acknowledged,
            n.walletId, n.walletName, n.vaultNumber, n.watchtowerId, n.locale
@@ -167,19 +166,16 @@ async function sendNotifications(networkId: string) {
         -- After first day: retry once per day
         ((? - n.firstAttemptAt) > 86400 AND (? - n.lastAttemptAt) >= 86400)
       )
-  `,
-    [maxRetryTime, now - 86400, now, now, now],
-  );
+  `).all(maxRetryTime, now - 86400, now, now, now);
 
   for (const notification of notificationsToSend) {
     try {
       // Set firstAttemptAt if this is the first attempt
       if (notification.firstAttemptAt === null) {
         // Verify commitment is present before sending 1st notification
-        const tx = await db.get(
-          "SELECT txid, commitmentTxid FROM vault_txids WHERE txid = ? AND vaultId = ?",
-          [notification.txid, notification.vaultId],
-        );
+        const tx = db.prepare(
+          "SELECT txid, commitmentTxid FROM vault_txids WHERE txid = ? AND vaultId = ?"
+        ).get(notification.txid, notification.vaultId);
         if (tx && tx.commitmentTxid) {
           const isValidSpend = await verifyTriggerSpendingCommitment(
             tx.txid,
@@ -197,23 +193,21 @@ async function sendNotifications(networkId: string) {
 
         const firstDetectionTimestamp = Math.floor(Date.now() / 1000);
 
-        await db.run(
-          "UPDATE notifications SET firstAttemptAt = ?, lastAttemptAt = ?, attemptCount = 1 WHERE vaultId = ? AND pushToken = ?",
-          [
-            firstDetectionTimestamp,
-            firstDetectionTimestamp,
-            notification.vaultId,
-            notification.pushToken,
-          ],
+        db.prepare(
+          "UPDATE notifications SET firstAttemptAt = ?, lastAttemptAt = ?, attemptCount = 1 WHERE vaultId = ? AND pushToken = ?"
+        ).run(
+          firstDetectionTimestamp,
+          firstDetectionTimestamp,
+          notification.vaultId,
+          notification.pushToken
         );
         notification.firstAttemptAt = firstDetectionTimestamp;
         notification.attemptCount = 1;
       } else {
         // Increment attempt count
-        await db.run(
-          "UPDATE notifications SET lastAttemptAt = strftime('%s','now'), attemptCount = attemptCount + 1 WHERE vaultId = ? AND pushToken = ?",
-          [notification.vaultId, notification.pushToken],
-        );
+        db.prepare(
+          "UPDATE notifications SET lastAttemptAt = strftime('%s','now'), attemptCount = attemptCount + 1 WHERE vaultId = ? AND pushToken = ?"
+        ).run(notification.vaultId, notification.pushToken);
         notification.attemptCount += 1;
       }
 
@@ -290,9 +284,9 @@ async function monitorTransactions(networkId: string): Promise<void> {
 
   try {
     // Get the last checked height from the database
-    const state = await db.get(
-      "SELECT last_checked_height FROM network_state WHERE id = 1",
-    );
+    const state = db.prepare(
+      "SELECT last_checked_height FROM network_state WHERE id = 1"
+    ).get();
 
     const lastCheckedHeight = state?.last_checked_height || 0;
     const currentHeight = parseInt(
@@ -317,11 +311,11 @@ async function monitorTransactions(networkId: string): Promise<void> {
       }
     }
     // Check all unchecked transactions directly
-    const uncheckedTxs = await db.all(`
+    const uncheckedTxs = db.prepare(`
         SELECT vaultId, txid 
         FROM vault_txids
         WHERE status = 'unchecked'
-      `);
+      `).all();
 
     if (uncheckedTxs.length) {
       logger.info(
@@ -349,16 +343,16 @@ async function monitorTransactions(networkId: string): Promise<void> {
             : "reversible";
 
         //mempool or few blocks in:
-        await db.run("UPDATE vault_txids SET status = ? WHERE txid = ?", [
+        db.prepare("UPDATE vault_txids SET status = ? WHERE txid = ?").run(
           status,
-          tx.txid,
-        ]);
+          tx.txid
+        );
       } else {
         //not seen yet
-        await db.run("UPDATE vault_txids SET status = ? WHERE txid = ?", [
+        db.prepare("UPDATE vault_txids SET status = ? WHERE txid = ?").run(
           "unseen",
-          tx.txid,
-        ]);
+          tx.txid
+        );
       }
     }
     if (uncheckedTxs.length) {
@@ -391,11 +385,11 @@ async function monitorTransactions(networkId: string): Promise<void> {
         scannedBlockTxids.push(...blockTxids);
 
         // Get all transactions that need checking
-        const txsToCheck = await db.all(`
+        const txsToCheck = db.prepare(`
           SELECT txid, status, vaultId, commitmentTxid
           FROM vault_txids
           WHERE status = 'unseen' OR status = 'reversible'
-        `);
+        `).all();
 
         // Check each transaction
         for (const tx of txsToCheck) {
@@ -407,16 +401,16 @@ async function monitorTransactions(networkId: string): Promise<void> {
                 ? "irreversible"
                 : "reversible";
 
-            await db.run("UPDATE vault_txids SET status = ? WHERE txid = ?", [
+            db.prepare("UPDATE vault_txids SET status = ? WHERE txid = ?").run(
               status,
-              tx.txid,
-            ]);
+              tx.txid
+            );
           } else if (mempoolTxids.includes(tx.txid) && tx.status === "unseen") {
             // Transaction is in mempool
-            await db.run("UPDATE vault_txids SET status = ? WHERE txid = ?", [
+            db.prepare("UPDATE vault_txids SET status = ? WHERE txid = ?").run(
               "reversible",
-              tx.txid,
-            ]);
+              tx.txid
+            );
           }
         }
       }
@@ -427,11 +421,11 @@ async function monitorTransactions(networkId: string): Promise<void> {
       //    replaced by a longer chain
       // 2. Mempool purge - when a transaction is evicted from the mempool due
       //    to low fees, conflicts, or timeout
-      const txsToCheck = await db.all(`
+      const txsToCheck = db.prepare(`
           SELECT txid, status
           FROM vault_txids
           WHERE status = 'reversible'
-        `);
+        `).all();
       // Check if transaction is in either scanned blocks OR mempool
       for (const tx of txsToCheck)
         if (
@@ -443,24 +437,21 @@ async function monitorTransactions(networkId: string): Promise<void> {
           // This means it was either reorg or purged from the mempool.
 
           // Reset the transaction status
-          await db.run("UPDATE vault_txids SET status = ? WHERE txid = ?", [
+          db.prepare("UPDATE vault_txids SET status = ? WHERE txid = ?").run(
             "unseen",
-            tx.txid,
-          ]);
+            tx.txid
+          );
 
           // Reset notifications for this transaction's vaultId
           // so they can be sent again if the transaction reappears
-          await db.run(
-            `
-              UPDATE notifications 
-              SET firstAttemptAt = NULL, 
-                  lastAttemptAt = NULL, attemptCount = 0
-              WHERE vaultId IN (
-                SELECT vaultId FROM vault_txids WHERE txid = ?
-              )
-            `,
-            [tx.txid],
-          );
+          db.prepare(`
+            UPDATE notifications 
+            SET firstAttemptAt = NULL, 
+                lastAttemptAt = NULL, attemptCount = 0
+            WHERE vaultId IN (
+              SELECT vaultId FROM vault_txids WHERE txid = ?
+            )
+          `).run(tx.txid);
 
           logger.warn(
             `Reset notifications for txid ${tx.txid} due to transaction disappearance (reorg or mempool purge)`,
@@ -470,10 +461,9 @@ async function monitorTransactions(networkId: string): Promise<void> {
     // Send notifications for triggered vaults
     await sendNotifications(networkId);
 
-    await db.run(
-      "INSERT OR REPLACE INTO network_state (id, last_checked_height) VALUES (1, ?)",
-      [currentHeight],
-    );
+    db.prepare(
+      "INSERT OR REPLACE INTO network_state (id, last_checked_height) VALUES (1, ?)"
+    ).run(currentHeight);
 
     logger.info(
       `${networkId} monitoring completed. Checked blocks up to height ${currentHeight}`,

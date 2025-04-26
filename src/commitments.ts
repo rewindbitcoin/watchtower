@@ -15,8 +15,7 @@
 import * as bitcoin from "bitcoinjs-lib";
 import * as fs from "fs";
 import * as path from "path";
-import sqlite3 from "sqlite3";
-import { open, Database } from "sqlite";
+import Database from 'better-sqlite3';
 import { createLogger } from "./logger";
 import { getDb } from "./db";
 
@@ -24,10 +23,7 @@ import { getDb } from "./db";
 const logger = createLogger("Commitments");
 
 // Cache for addresses database connections
-const addressesDbConnections: Record<
-  string,
-  Database<sqlite3.Database, sqlite3.Statement>
-> = {};
+const addressesDbConnections: Record<string, Database.Database> = {};
 
 /**
  * Verify that a commitment transaction is authorized:
@@ -61,10 +57,9 @@ export async function verifyCommitmentAuthorization(
 
     // Check if this commitment has already been used
     const db = getDb(networkId);
-    const existingCommitment = await db.get(
-      "SELECT vaultId FROM commitments WHERE txid = ?",
-      [txid],
-    );
+    const existingCommitment = db.prepare(
+      "SELECT vaultId FROM commitments WHERE txid = ?"
+    ).get(txid);
 
     if (existingCommitment) {
       if (existingCommitment.vaultId === vaultId) {
@@ -116,13 +111,13 @@ export async function verifyCommitmentAuthorization(
     }
 
     // Connect to the addresses database
-    const addressDb = await initAddressesDb(networkId, addressDbPath);
+    const addressDb = initAddressesDb(networkId, addressDbPath);
 
     // Check if any of the output addresses are authorized
     const placeholders = candidateAddresses.map(() => "?").join(",");
     const query = `SELECT COUNT(*) AS count FROM addresses WHERE address IN (${placeholders})`;
 
-    const result = await addressDb.get(query, candidateAddresses);
+    const result = addressDb.prepare(query).get(...candidateAddresses);
 
     if (!result || result.count === 0) {
       logger.warn(
@@ -150,22 +145,18 @@ export async function verifyCommitmentAuthorization(
 /**
  * Initialize a connection to the addresses database
  */
-async function initAddressesDb(networkId: string, dbPath: string) {
+function initAddressesDb(networkId: string, dbPath: string) {
   if (addressesDbConnections[networkId]) {
     return addressesDbConnections[networkId];
   }
 
   // Open the database
-  const db = await open({
-    filename: dbPath,
-    driver: sqlite3.Database,
-    mode: sqlite3.OPEN_READONLY,
-  });
+  const db = new Database(dbPath, { readonly: true });
 
   // Check if the addresses table exists
-  const tableExists = await db.get(
-    "SELECT name FROM sqlite_master WHERE type='table' AND name='addresses'",
-  );
+  const tableExists = db.prepare(
+    "SELECT name FROM sqlite_master WHERE type='table' AND name='addresses'"
+  ).get();
 
   if (!tableExists) {
     throw new Error(
@@ -192,9 +183,9 @@ export function getAddressesDb(networkId: string) {
  * Close addresses database connection for a network if it exists
  * @param networkId The network ID
  */
-export async function closeAddressesDb(networkId: string): Promise<void> {
+export function closeAddressesDb(networkId: string): void {
   if (addressesDbConnections[networkId]) {
-    await addressesDbConnections[networkId].close();
+    addressesDbConnections[networkId].close();
     delete addressesDbConnections[networkId];
     logger.info(`Addresses database for ${networkId} closed successfully`);
   }
