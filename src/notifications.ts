@@ -19,7 +19,7 @@ const logger = createLogger("Notifications");
 
 export interface NotificationData {
   vaultId: string;
-  walletId: string;
+  walletUUID: string;
   walletName: string;
   vaultNumber: number;
   watchtowerId: string; // Client-provided unique ID for the watchtower instance

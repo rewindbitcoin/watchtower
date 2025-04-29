@@ -38,7 +38,7 @@ export function registerRoutes(
       const {
         pushToken,
         vaults,
-        walletId,
+        walletUUID,
         walletName,
         watchtowerId, // Client-provided unique ID for the watchtower instance
         locale = "en",
@@ -56,13 +56,13 @@ export function registerRoutes(
         if (
           !pushToken ||
           !Array.isArray(vaults) ||
-          !walletId ||
+          !walletUUID ||
           !walletName ||
           !watchtowerId
         ) {
           res.status(400).json({
             error:
-              "Invalid input data. pushToken, vaults array, walletId, walletName, and watchtowerId are required",
+              "Invalid input data. pushToken, vaults array, walletUUID, walletName, and watchtowerId are required",
           });
           return;
         }
@@ -152,7 +152,7 @@ export function registerRoutes(
                   `Vault ${vaultId} on ${networkId} network is spent and irreversible`,
                   {
                     pushToken,
-                    walletId,
+                    walletUUID,
                     walletName,
                     vaultNumber,
                     watchtowerId,
@@ -164,12 +164,12 @@ export function registerRoutes(
               // Insert notification entry and check if it was actually inserted
               const result = db
                 .prepare(
-                  `INSERT OR IGNORE INTO notifications (pushToken, vaultId, walletId, walletName, vaultNumber, watchtowerId, locale) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                  `INSERT OR IGNORE INTO notifications (pushToken, vaultId, walletUUID, walletName, vaultNumber, watchtowerId, locale) VALUES (?, ?, ?, ?, ?, ?, ?)`,
                 )
                 .run(
                   pushToken,
                   vaultId,
-                  walletId,
+                  walletUUID,
                   walletName,
                   vaultNumber,
                   watchtowerId,
@@ -182,7 +182,7 @@ export function registerRoutes(
                   `New device registered for vault ${vaultId} on ${networkId} network`,
                   {
                     pushToken,
-                    walletId,
+                    walletUUID,
                     walletName,
                     vaultNumber,
                     watchtowerId,
@@ -215,26 +215,26 @@ export function registerRoutes(
 
                 logger.info(
                   `Registered vault ${vaultId} with ${triggerTxIds.length} trigger transactions on ${networkId} network`,
-                  { walletId, walletName, vaultNumber, watchtowerId, locale },
+                  { walletUUID, walletName, vaultNumber, watchtowerId, locale },
                 );
               } else {
                 logger.info(
                   `Notification for vault ${vaultId} and push token ${pushToken} already exists on ${networkId} network, skipping txid processing`,
-                  { walletId, walletName, vaultNumber, watchtowerId },
+                  { walletUUID, walletName, vaultNumber, watchtowerId },
                 );
               }
             }
           })();
 
           logger.info(
-            `Successfully registered ${vaults.length} vaults for wallet "${walletName}" (ID: ${walletId}) on ${networkId} network`,
+            `Successfully registered ${vaults.length} vaults for wallet "${walletName}" (ID: ${walletUUID}) on ${networkId} network`,
             { requestId: req.requestId },
           );
           res.sendStatus(200);
         } catch (error) {
           logger.error(`Database transaction failed on ${networkId} network`, {
             error: error instanceof Error ? error.message : String(error),
-            walletId,
+            walletUUID,
             walletName,
             watchtowerId,
             requestId: req.requestId,
@@ -264,7 +264,7 @@ export function registerRoutes(
         logger.error(`Error in watchtower/register for ${networkId} network:`, {
           error: errorMessage,
           stack: err instanceof Error ? err.stack : undefined,
-          walletId,
+          walletUUID,
           walletName,
           watchtowerId,
           pushToken,
@@ -380,7 +380,7 @@ export function registerRoutes(
         const queriedNotifications = db
           .prepare(
             `
-          SELECT n.vaultId, n.walletId, n.walletName, n.vaultNumber, n.watchtowerId,
+          SELECT n.vaultId, n.walletUUID, n.walletName, n.vaultNumber, n.watchtowerId,
                  vt.txid, n.attemptCount, n.firstAttemptAt as firstDetectedAt
           FROM notifications n
           JOIN vault_txids vt ON n.vaultId = vt.vaultId
@@ -395,7 +395,7 @@ export function registerRoutes(
         // Add network ID to each notification
         const notifications = queriedNotifications.map((notification) => ({
           vaultId: notification.vaultId,
-          walletId: notification.walletId,
+          walletUUID: notification.walletUUID,
           walletName: notification.walletName,
           vaultNumber: notification.vaultNumber,
           watchtowerId: notification.watchtowerId,

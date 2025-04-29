@@ -190,7 +190,7 @@ When a vault access attempt is detected, the Watchtower immediately sends a push
   "body": "Your vault vault123 in wallet 'My Bitcoin Wallet' is being accessed!",
   "data": {
     "vaultId": "vault123",
-    "walletId": "wallet_unique_identifier",
+    "walletUUID": "wallet_unique_identifier",
     "walletName": "My Bitcoin Wallet",
     "vaultNumber": 1,
     "watchtowerId": "client_provided_unique_id_for_watchtower",
@@ -222,7 +222,7 @@ This persistent approach ensures that even if a user's device is temporarily off
   "body": "Your vault vault123 in wallet 'My Bitcoin Wallet' is being accessed! (Attempt 3, first detected 14 hours ago)",
   "data": {
     "vaultId": "vault123",
-    "walletId": "wallet_unique_identifier",
+    "walletUUID": "wallet_unique_identifier",
     "walletName": "My Bitcoin Wallet",
     "vaultNumber": 1,
     "watchtowerId": "client_provided_unique_id_for_watchtower",
@@ -273,7 +273,7 @@ The Watchtower provides a simple REST API for registering vaults and acknowledgi
   ```json
   {
     "pushToken": "ExponentPushToken[xyz]",
-    "walletId": "wallet_unique_identifier", // Unique ID for the wallet
+    "walletUUID": "wallet_unique_identifier", // Unique ID for the wallet
     "walletName": "My Bitcoin Wallet",
     "watchtowerId": "client_provided_unique_id_for_watchtower", // Client-provided unique ID for this watchtower instance
     "locale": "es", // Optional, defaults to "en"
@@ -355,7 +355,7 @@ The language is specified using the `locale` parameter during vault registration
     "notifications": [
       {
         "vaultId": "vault123",
-        "walletId": "wallet_unique_identifier",
+        "walletUUID": "wallet_unique_identifier",
         "walletName": "My Bitcoin Wallet",
         "vaultNumber": 1,
         "watchtowerId": "client_provided_unique_id_for_watchtower",
@@ -366,7 +366,7 @@ The language is specified using the `locale` parameter during vault registration
       },
       {
         "vaultId": "vault456",
-        "walletId": "wallet_unique_identifier",
+        "walletUUID": "wallet_unique_identifier",
         "walletName": "My Bitcoin Wallet",
         "vaultNumber": 2,
         "watchtowerId": "client_provided_unique_id_for_watchtower",
@@ -395,7 +395,7 @@ The Watchtower API uses **SQLite** with the following structure:
 |----------|------|-------------|
 | `pushToken` | TEXT | Device push notification token |
 | `vaultId` | TEXT | Associated vault ID |
-| `walletId` | TEXT | Unique ID for the wallet |
+| `walletUUID` | TEXT | Unique ID for the wallet |
 | `walletName` | TEXT | Name of the wallet containing the vault |
 | `vaultNumber` | INTEGER | The nth vault created in the wallet |
 | `watchtowerId` | TEXT | Client-provided unique ID for the watchtower instance used for registration |

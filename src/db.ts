@@ -36,7 +36,7 @@ export function initDb(dbPath: string, networkId: string) {
     CREATE TABLE IF NOT EXISTS notifications (
       pushToken TEXT NOT NULL,
       vaultId TEXT NOT NULL,
-      walletId TEXT NOT NULL,
+      walletUUID TEXT NOT NULL,
       walletName TEXT NOT NULL,
       vaultNumber INTEGER NOT NULL,
       watchtowerId TEXT NOT NULL, -- Client-provided unique ID for the watchtower instance

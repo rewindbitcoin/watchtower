@@ -152,7 +152,7 @@ async function sendNotifications(networkId: string) {
       `
     SELECT n.pushToken, n.vaultId, vt.txid, vt.status,
            n.firstAttemptAt, n.lastAttemptAt, n.attemptCount, n.acknowledged,
-           n.walletId, n.walletName, n.vaultNumber, n.watchtowerId, n.locale
+           n.walletUUID, n.walletName, n.vaultNumber, n.watchtowerId, n.locale
     FROM notifications n
     JOIN vault_txids vt ON n.vaultId = vt.vaultId
     WHERE n.acknowledged = 0
@@ -179,7 +179,7 @@ async function sendNotifications(networkId: string) {
     lastAttemptAt: number | null;
     attemptCount: number;
     acknowledged: number;
-    walletId: string;
+    walletUUID: string;
     walletName: string;
     vaultNumber: number;
     watchtowerId: string;
@@ -264,7 +264,7 @@ async function sendNotifications(networkId: string) {
         body: body,
         data: {
           vaultId: notification.vaultId,
-          walletId: notification.walletId,
+          walletUUID: notification.walletUUID,
           walletName: notification.walletName,
           vaultNumber: notification.vaultNumber,
           watchtowerId: notification.watchtowerId, // Client-provided unique ID for the watchtower instance
@@ -279,7 +279,7 @@ async function sendNotifications(networkId: string) {
         logger.info(
           `Notification sent for vault ${notification.vaultId} to device ${notification.pushToken} (tx status: ${notification.status}, attempt: ${notification.attemptCount}, locale: ${locale} [normalized from: ${notification.locale}])`,
           {
-            walletId: notification.walletId,
+            walletUUID: notification.walletUUID,
             walletName: notification.walletName,
             vaultNumber: notification.vaultNumber,
             watchtowerId: notification.watchtowerId,
