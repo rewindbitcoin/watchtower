@@ -28,15 +28,15 @@ interface MessageTemplates {
 const messages: Record<Locale, MessageTemplates> = {
   // English translations
   en: {
-    vaultAccessTitle: "🚨 Vault Security Alert",
+    vaultAccessTitle: "🚨 Vault Security Alert 🚨",
     vaultAccessBody:
-      "Unauthorized access to Vault #{vaultNumber} ({walletName}) {timeSince}.",
+      "Unauthorized access to Wallet '{walletName}' (Vault #{vaultNumber}) {timeSince}.",
   },
   // Spanish translations
   es: {
-    vaultAccessTitle: "🚨 Alerta de Seguridad",
+    vaultAccessTitle: "🚨 Alerta de Seguridad 🚨",
     vaultAccessBody:
-      "Acceso no autorizado a Bóveda #{vaultNumber} ({walletName}) {timeSince}.",
+      "Acceso no autorizado a Billetera '{walletName}' (Bóveda #{vaultNumber}) {timeSince}.",
   },
 };
 
