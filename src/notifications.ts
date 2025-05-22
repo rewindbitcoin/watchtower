@@ -31,9 +31,13 @@ export interface NotificationData {
 
 export interface NotificationPayload {
   to: string;
+  priority: "default" | "normal" | "high";
   title: string;
   body: string;
   data: NotificationData;
+  android?: {
+    channelId: string;
+  };
 }
 
 export async function sendPushNotification(

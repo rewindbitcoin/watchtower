@@ -262,6 +262,8 @@ async function sendNotifications(networkId: string) {
         to: notification.pushToken,
         title: title,
         body: body,
+        priority: "high",
+        android: { channelId: "default" },
         data: {
           vaultId: notification.vaultId,
           walletUUID: notification.walletUUID,
