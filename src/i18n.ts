@@ -30,13 +30,13 @@ const messages: Record<Locale, MessageTemplates> = {
   en: {
     vaultAccessTitle: "🚨 Vault Security Alert 🚨",
     vaultAccessBody:
-      "Unauthorized access to Wallet '{walletName}' (Vault #{vaultNumber}) {timeSince}.",
+      "Unauthorized access to Wallet '{walletName}' (Vault #{vaultNumber}) {timeSince}. Take action NOW!",
   },
   // Spanish translations
   es: {
     vaultAccessTitle: "🚨 Alerta de Seguridad 🚨",
     vaultAccessBody:
-      "Acceso no autorizado a Billetera '{walletName}' (Bóveda #{vaultNumber}) {timeSince}.",
+      "Acceso no autorizado a Billetera '{walletName}' (Bóveda #{vaultNumber}) {timeSince}. ¡Actúa AHORA!",
   },
 };
 
