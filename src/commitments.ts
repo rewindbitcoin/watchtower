@@ -99,7 +99,12 @@ export function verifyCommitmentAuthorization(
     }
 
     // Open the addresses database
-    const addressDbPath = path.join(dbFolder, `${networkId}.sqlite`);
+    // In production, the 'tape' network (which is actually a regtest-based net)
+    // will typically use 'regtest' as the DB name
+    const addressDbPath = path.join(
+      dbFolder,
+      `${networkId === "tape" ? "regtest" : networkId}.sqlite`,
+    );
 
     // Check if the addresses database exists
     if (!fs.existsSync(addressDbPath)) {
